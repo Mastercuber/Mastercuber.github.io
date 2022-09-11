@@ -98,7 +98,7 @@ function normalizeStyle(value) {
     else if (isString$1(value)) {
         return value;
     }
-    else if (isObject$2(value)) {
+    else if (isObject$1(value)) {
         return value;
     }
 }
@@ -127,7 +127,7 @@ function normalizeClass(value) {
             }
         }
     }
-    else if (isObject$2(value)) {
+    else if (isObject$1(value)) {
         for (const name in value) {
             if (value[name]) {
                 res += name + ' ';
@@ -147,7 +147,7 @@ const toDisplayString$1 = (val) => {
         : val == null
             ? ''
             : isArray$1(val) ||
-                (isObject$2(val) &&
+                (isObject$1(val) &&
                     (val.toString === objectToString$1 || !isFunction$1(val.toString)))
                 ? JSON.stringify(val, replacer, 2)
                 : String(val);
@@ -170,7 +170,7 @@ const replacer = (_key, val) => {
             [`Set(${val.size})`]: [...val.values()]
         };
     }
-    else if (isObject$2(val) && !isArray$1(val) && !isPlainObject$1(val)) {
+    else if (isObject$1(val) && !isArray$1(val) && !isPlainObject$1(val)) {
         return String(val);
     }
     return val;
@@ -193,17 +193,17 @@ const remove = (arr, el) => {
         arr.splice(i, 1);
     }
 };
-const hasOwnProperty$2 = Object.prototype.hasOwnProperty;
-const hasOwn$2 = (val, key) => hasOwnProperty$2.call(val, key);
+const hasOwnProperty$1 = Object.prototype.hasOwnProperty;
+const hasOwn$1 = (val, key) => hasOwnProperty$1.call(val, key);
 const isArray$1 = Array.isArray;
 const isMap = (val) => toTypeString$1(val) === '[object Map]';
 const isSet = (val) => toTypeString$1(val) === '[object Set]';
 const isFunction$1 = (val) => typeof val === 'function';
 const isString$1 = (val) => typeof val === 'string';
 const isSymbol = (val) => typeof val === 'symbol';
-const isObject$2 = (val) => val !== null && typeof val === 'object';
+const isObject$1 = (val) => val !== null && typeof val === 'object';
 const isPromise = (val) => {
-    return isObject$2(val) && isFunction$1(val.then) && isFunction$1(val.catch);
+    return isObject$1(val) && isFunction$1(val.then) && isFunction$1(val.catch);
 };
 const objectToString$1 = Object.prototype.toString;
 const toTypeString$1 = (value) => objectToString$1.call(value);
@@ -244,11 +244,11 @@ const hyphenate = cacheStringFunction((str) => str.replace(hyphenateRE, '-$1').t
 /**
  * @private
  */
-const capitalize = cacheStringFunction((str) => str.charAt(0).toUpperCase() + str.slice(1));
+const capitalize$1 = cacheStringFunction((str) => str.charAt(0).toUpperCase() + str.slice(1));
 /**
  * @private
  */
-const toHandlerKey = cacheStringFunction((str) => str ? `on${capitalize(str)}` : ``);
+const toHandlerKey = cacheStringFunction((str) => str ? `on${capitalize$1(str)}` : ``);
 // compare whether a value has changed, accounting for NaN.
 const hasChanged = (value, oldValue) => !Object.is(value, oldValue);
 const invokeArrayFns = (fns, arg) => {
@@ -355,6 +355,9 @@ class EffectScope {
             this.active = false;
         }
     }
+}
+function effectScope(detached) {
+    return new EffectScope(detached);
 }
 function recordEffectScope(effect, scope = activeEffectScope) {
     if (scope && scope.active) {
@@ -527,7 +530,7 @@ function trigger(target, type, key, newValue, oldValue, oldTarget) {
         return;
     }
     let deps = [];
-    if (type === "clear" /* CLEAR */) {
+    if (type === "clear" /* TriggerOpTypes.CLEAR */) {
         // collection being cleared
         // trigger all effects for target
         deps = [...depsMap.values()];
@@ -546,7 +549,7 @@ function trigger(target, type, key, newValue, oldValue, oldTarget) {
         }
         // also run for iteration key on ADD | DELETE | Map.SET
         switch (type) {
-            case "add" /* ADD */:
+            case "add" /* TriggerOpTypes.ADD */:
                 if (!isArray$1(target)) {
                     deps.push(depsMap.get(ITERATE_KEY));
                     if (isMap(target)) {
@@ -558,7 +561,7 @@ function trigger(target, type, key, newValue, oldValue, oldTarget) {
                     deps.push(depsMap.get('length'));
                 }
                 break;
-            case "delete" /* DELETE */:
+            case "delete" /* TriggerOpTypes.DELETE */:
                 if (!isArray$1(target)) {
                     deps.push(depsMap.get(ITERATE_KEY));
                     if (isMap(target)) {
@@ -566,7 +569,7 @@ function trigger(target, type, key, newValue, oldValue, oldTarget) {
                     }
                 }
                 break;
-            case "set" /* SET */:
+            case "set" /* TriggerOpTypes.SET */:
                 if (isMap(target)) {
                     deps.push(depsMap.get(ITERATE_KEY));
                 }
@@ -637,7 +640,7 @@ function createArrayInstrumentations() {
         instrumentations[key] = function (...args) {
             const arr = toRaw(this);
             for (let i = 0, l = this.length; i < l; i++) {
-                track(arr, "get" /* GET */, i + '');
+                track(arr, "get" /* TrackOpTypes.GET */, i + '');
             }
             // we run the method using the original args first (which may be reactive)
             const res = arr[key](...args);
@@ -662,16 +665,16 @@ function createArrayInstrumentations() {
 }
 function createGetter(isReadonly = false, shallow = false) {
     return function get(target, key, receiver) {
-        if (key === "__v_isReactive" /* IS_REACTIVE */) {
+        if (key === "__v_isReactive" /* ReactiveFlags.IS_REACTIVE */) {
             return !isReadonly;
         }
-        else if (key === "__v_isReadonly" /* IS_READONLY */) {
+        else if (key === "__v_isReadonly" /* ReactiveFlags.IS_READONLY */) {
             return isReadonly;
         }
-        else if (key === "__v_isShallow" /* IS_SHALLOW */) {
+        else if (key === "__v_isShallow" /* ReactiveFlags.IS_SHALLOW */) {
             return shallow;
         }
-        else if (key === "__v_raw" /* RAW */ &&
+        else if (key === "__v_raw" /* ReactiveFlags.RAW */ &&
             receiver ===
                 (isReadonly
                     ? shallow
@@ -683,7 +686,7 @@ function createGetter(isReadonly = false, shallow = false) {
             return target;
         }
         const targetIsArray = isArray$1(target);
-        if (!isReadonly && targetIsArray && hasOwn$2(arrayInstrumentations, key)) {
+        if (!isReadonly && targetIsArray && hasOwn$1(arrayInstrumentations, key)) {
             return Reflect.get(arrayInstrumentations, key, receiver);
         }
         const res = Reflect.get(target, key, receiver);
@@ -691,7 +694,7 @@ function createGetter(isReadonly = false, shallow = false) {
             return res;
         }
         if (!isReadonly) {
-            track(target, "get" /* GET */, key);
+            track(target, "get" /* TrackOpTypes.GET */, key);
         }
         if (shallow) {
             return res;
@@ -700,7 +703,7 @@ function createGetter(isReadonly = false, shallow = false) {
             // ref unwrapping - skip unwrap for Array + integer key.
             return targetIsArray && isIntegerKey(key) ? res : res.value;
         }
-        if (isObject$2(res)) {
+        if (isObject$1(res)) {
             // Convert returned value into a proxy as well. we do the isObject check
             // here to avoid invalid value warning. Also need to lazy access readonly
             // and reactive here to avoid circular dependency.
@@ -717,10 +720,10 @@ function createSetter(shallow = false) {
         if (isReadonly(oldValue) && isRef(oldValue) && !isRef(value)) {
             return false;
         }
-        if (!shallow && !isReadonly(value)) {
-            if (!isShallow(value)) {
-                value = toRaw(value);
+        if (!shallow) {
+            if (!isShallow(value) && !isReadonly(value)) {
                 oldValue = toRaw(oldValue);
+                value = toRaw(value);
             }
             if (!isArray$1(target) && isRef(oldValue) && !isRef(value)) {
                 oldValue.value = value;
@@ -729,38 +732,38 @@ function createSetter(shallow = false) {
         }
         const hadKey = isArray$1(target) && isIntegerKey(key)
             ? Number(key) < target.length
-            : hasOwn$2(target, key);
+            : hasOwn$1(target, key);
         const result = Reflect.set(target, key, value, receiver);
         // don't trigger if target is something up in the prototype chain of original
         if (target === toRaw(receiver)) {
             if (!hadKey) {
-                trigger(target, "add" /* ADD */, key, value);
+                trigger(target, "add" /* TriggerOpTypes.ADD */, key, value);
             }
             else if (hasChanged(value, oldValue)) {
-                trigger(target, "set" /* SET */, key, value);
+                trigger(target, "set" /* TriggerOpTypes.SET */, key, value);
             }
         }
         return result;
     };
 }
 function deleteProperty(target, key) {
-    const hadKey = hasOwn$2(target, key);
+    const hadKey = hasOwn$1(target, key);
     target[key];
     const result = Reflect.deleteProperty(target, key);
     if (result && hadKey) {
-        trigger(target, "delete" /* DELETE */, key, undefined);
+        trigger(target, "delete" /* TriggerOpTypes.DELETE */, key, undefined);
     }
     return result;
 }
 function has(target, key) {
     const result = Reflect.has(target, key);
     if (!isSymbol(key) || !builtInSymbols.has(key)) {
-        track(target, "has" /* HAS */, key);
+        track(target, "has" /* TrackOpTypes.HAS */, key);
     }
     return result;
 }
 function ownKeys(target) {
-    track(target, "iterate" /* ITERATE */, isArray$1(target) ? 'length' : ITERATE_KEY);
+    track(target, "iterate" /* TrackOpTypes.ITERATE */, isArray$1(target) ? 'length' : ITERATE_KEY);
     return Reflect.ownKeys(target);
 }
 const mutableHandlers = {
@@ -789,14 +792,14 @@ const getProto = (v) => Reflect.getPrototypeOf(v);
 function get$1(target, key, isReadonly = false, isShallow = false) {
     // #1772: readonly(reactive(Map)) should return readonly + reactive version
     // of the value
-    target = target["__v_raw" /* RAW */];
+    target = target["__v_raw" /* ReactiveFlags.RAW */];
     const rawTarget = toRaw(target);
     const rawKey = toRaw(key);
     if (!isReadonly) {
         if (key !== rawKey) {
-            track(rawTarget, "get" /* GET */, key);
+            track(rawTarget, "get" /* TrackOpTypes.GET */, key);
         }
-        track(rawTarget, "get" /* GET */, rawKey);
+        track(rawTarget, "get" /* TrackOpTypes.GET */, rawKey);
     }
     const { has } = getProto(rawTarget);
     const wrap = isShallow ? toShallow : isReadonly ? toReadonly : toReactive;
@@ -813,22 +816,22 @@ function get$1(target, key, isReadonly = false, isShallow = false) {
     }
 }
 function has$1(key, isReadonly = false) {
-    const target = this["__v_raw" /* RAW */];
+    const target = this["__v_raw" /* ReactiveFlags.RAW */];
     const rawTarget = toRaw(target);
     const rawKey = toRaw(key);
     if (!isReadonly) {
         if (key !== rawKey) {
-            track(rawTarget, "has" /* HAS */, key);
+            track(rawTarget, "has" /* TrackOpTypes.HAS */, key);
         }
-        track(rawTarget, "has" /* HAS */, rawKey);
+        track(rawTarget, "has" /* TrackOpTypes.HAS */, rawKey);
     }
     return key === rawKey
         ? target.has(key)
         : target.has(key) || target.has(rawKey);
 }
 function size(target, isReadonly = false) {
-    target = target["__v_raw" /* RAW */];
-    !isReadonly && track(toRaw(target), "iterate" /* ITERATE */, ITERATE_KEY);
+    target = target["__v_raw" /* ReactiveFlags.RAW */];
+    !isReadonly && track(toRaw(target), "iterate" /* TrackOpTypes.ITERATE */, ITERATE_KEY);
     return Reflect.get(target, 'size', target);
 }
 function add(value) {
@@ -838,7 +841,7 @@ function add(value) {
     const hadKey = proto.has.call(target, value);
     if (!hadKey) {
         target.add(value);
-        trigger(target, "add" /* ADD */, value, value);
+        trigger(target, "add" /* TriggerOpTypes.ADD */, value, value);
     }
     return this;
 }
@@ -854,10 +857,10 @@ function set$1(key, value) {
     const oldValue = get.call(target, key);
     target.set(key, value);
     if (!hadKey) {
-        trigger(target, "add" /* ADD */, key, value);
+        trigger(target, "add" /* TriggerOpTypes.ADD */, key, value);
     }
     else if (hasChanged(value, oldValue)) {
-        trigger(target, "set" /* SET */, key, value);
+        trigger(target, "set" /* TriggerOpTypes.SET */, key, value);
     }
     return this;
 }
@@ -873,7 +876,7 @@ function deleteEntry(key) {
     // forward the operation before queueing reactions
     const result = target.delete(key);
     if (hadKey) {
-        trigger(target, "delete" /* DELETE */, key, undefined);
+        trigger(target, "delete" /* TriggerOpTypes.DELETE */, key, undefined);
     }
     return result;
 }
@@ -883,17 +886,17 @@ function clear() {
     // forward the operation before queueing reactions
     const result = target.clear();
     if (hadItems) {
-        trigger(target, "clear" /* CLEAR */, undefined, undefined);
+        trigger(target, "clear" /* TriggerOpTypes.CLEAR */, undefined, undefined);
     }
     return result;
 }
 function createForEach(isReadonly, isShallow) {
     return function forEach(callback, thisArg) {
         const observed = this;
-        const target = observed["__v_raw" /* RAW */];
+        const target = observed["__v_raw" /* ReactiveFlags.RAW */];
         const rawTarget = toRaw(target);
         const wrap = isShallow ? toShallow : isReadonly ? toReadonly : toReactive;
-        !isReadonly && track(rawTarget, "iterate" /* ITERATE */, ITERATE_KEY);
+        !isReadonly && track(rawTarget, "iterate" /* TrackOpTypes.ITERATE */, ITERATE_KEY);
         return target.forEach((value, key) => {
             // important: make sure the callback is
             // 1. invoked with the reactive map as `this` and 3rd arg
@@ -904,7 +907,7 @@ function createForEach(isReadonly, isShallow) {
 }
 function createIterableMethod(method, isReadonly, isShallow) {
     return function (...args) {
-        const target = this["__v_raw" /* RAW */];
+        const target = this["__v_raw" /* ReactiveFlags.RAW */];
         const rawTarget = toRaw(target);
         const targetIsMap = isMap(rawTarget);
         const isPair = method === 'entries' || (method === Symbol.iterator && targetIsMap);
@@ -912,7 +915,7 @@ function createIterableMethod(method, isReadonly, isShallow) {
         const innerIterator = target[method](...args);
         const wrap = isShallow ? toShallow : isReadonly ? toReadonly : toReactive;
         !isReadonly &&
-            track(rawTarget, "iterate" /* ITERATE */, isKeyOnly ? MAP_KEY_ITERATE_KEY : ITERATE_KEY);
+            track(rawTarget, "iterate" /* TrackOpTypes.ITERATE */, isKeyOnly ? MAP_KEY_ITERATE_KEY : ITERATE_KEY);
         // return a wrapped iterator which returns observed versions of the
         // values emitted from the real iterator
         return {
@@ -935,7 +938,7 @@ function createIterableMethod(method, isReadonly, isShallow) {
 }
 function createReadonlyMethod(type) {
     return function (...args) {
-        return type === "delete" /* DELETE */ ? false : this;
+        return type === "delete" /* TriggerOpTypes.DELETE */ ? false : this;
     };
 }
 function createInstrumentations() {
@@ -977,10 +980,10 @@ function createInstrumentations() {
         has(key) {
             return has$1.call(this, key, true);
         },
-        add: createReadonlyMethod("add" /* ADD */),
-        set: createReadonlyMethod("set" /* SET */),
-        delete: createReadonlyMethod("delete" /* DELETE */),
-        clear: createReadonlyMethod("clear" /* CLEAR */),
+        add: createReadonlyMethod("add" /* TriggerOpTypes.ADD */),
+        set: createReadonlyMethod("set" /* TriggerOpTypes.SET */),
+        delete: createReadonlyMethod("delete" /* TriggerOpTypes.DELETE */),
+        clear: createReadonlyMethod("clear" /* TriggerOpTypes.CLEAR */),
         forEach: createForEach(true, false)
     };
     const shallowReadonlyInstrumentations = {
@@ -993,10 +996,10 @@ function createInstrumentations() {
         has(key) {
             return has$1.call(this, key, true);
         },
-        add: createReadonlyMethod("add" /* ADD */),
-        set: createReadonlyMethod("set" /* SET */),
-        delete: createReadonlyMethod("delete" /* DELETE */),
-        clear: createReadonlyMethod("clear" /* CLEAR */),
+        add: createReadonlyMethod("add" /* TriggerOpTypes.ADD */),
+        set: createReadonlyMethod("set" /* TriggerOpTypes.SET */),
+        delete: createReadonlyMethod("delete" /* TriggerOpTypes.DELETE */),
+        clear: createReadonlyMethod("clear" /* TriggerOpTypes.CLEAR */),
         forEach: createForEach(true, true)
     };
     const iteratorMethods = ['keys', 'values', 'entries', Symbol.iterator];
@@ -1023,16 +1026,16 @@ function createInstrumentationGetter(isReadonly, shallow) {
             ? readonlyInstrumentations
             : mutableInstrumentations;
     return (target, key, receiver) => {
-        if (key === "__v_isReactive" /* IS_REACTIVE */) {
+        if (key === "__v_isReactive" /* ReactiveFlags.IS_REACTIVE */) {
             return !isReadonly;
         }
-        else if (key === "__v_isReadonly" /* IS_READONLY */) {
+        else if (key === "__v_isReadonly" /* ReactiveFlags.IS_READONLY */) {
             return isReadonly;
         }
-        else if (key === "__v_raw" /* RAW */) {
+        else if (key === "__v_raw" /* ReactiveFlags.RAW */) {
             return target;
         }
-        return Reflect.get(hasOwn$2(instrumentations, key) && key in target
+        return Reflect.get(hasOwn$1(instrumentations, key) && key in target
             ? instrumentations
             : target, key, receiver);
     };
@@ -1055,19 +1058,19 @@ function targetTypeMap(rawType) {
     switch (rawType) {
         case 'Object':
         case 'Array':
-            return 1 /* COMMON */;
+            return 1 /* TargetType.COMMON */;
         case 'Map':
         case 'Set':
         case 'WeakMap':
         case 'WeakSet':
-            return 2 /* COLLECTION */;
+            return 2 /* TargetType.COLLECTION */;
         default:
-            return 0 /* INVALID */;
+            return 0 /* TargetType.INVALID */;
     }
 }
 function getTargetType(value) {
-    return value["__v_skip" /* SKIP */] || !Object.isExtensible(value)
-        ? 0 /* INVALID */
+    return value["__v_skip" /* ReactiveFlags.SKIP */] || !Object.isExtensible(value)
+        ? 0 /* TargetType.INVALID */
         : targetTypeMap(toRawType(value));
 }
 function reactive(target) {
@@ -1093,13 +1096,13 @@ function readonly(target) {
     return createReactiveObject(target, true, readonlyHandlers, readonlyCollectionHandlers, readonlyMap);
 }
 function createReactiveObject(target, isReadonly, baseHandlers, collectionHandlers, proxyMap) {
-    if (!isObject$2(target)) {
+    if (!isObject$1(target)) {
         return target;
     }
     // target is already a Proxy, return it.
     // exception: calling readonly() on a reactive object
-    if (target["__v_raw" /* RAW */] &&
-        !(isReadonly && target["__v_isReactive" /* IS_REACTIVE */])) {
+    if (target["__v_raw" /* ReactiveFlags.RAW */] &&
+        !(isReadonly && target["__v_isReactive" /* ReactiveFlags.IS_REACTIVE */])) {
         return target;
     }
     // target already has corresponding Proxy
@@ -1109,38 +1112,38 @@ function createReactiveObject(target, isReadonly, baseHandlers, collectionHandle
     }
     // only specific value types can be observed.
     const targetType = getTargetType(target);
-    if (targetType === 0 /* INVALID */) {
+    if (targetType === 0 /* TargetType.INVALID */) {
         return target;
     }
-    const proxy = new Proxy(target, targetType === 2 /* COLLECTION */ ? collectionHandlers : baseHandlers);
+    const proxy = new Proxy(target, targetType === 2 /* TargetType.COLLECTION */ ? collectionHandlers : baseHandlers);
     proxyMap.set(target, proxy);
     return proxy;
 }
 function isReactive(value) {
     if (isReadonly(value)) {
-        return isReactive(value["__v_raw" /* RAW */]);
+        return isReactive(value["__v_raw" /* ReactiveFlags.RAW */]);
     }
-    return !!(value && value["__v_isReactive" /* IS_REACTIVE */]);
+    return !!(value && value["__v_isReactive" /* ReactiveFlags.IS_REACTIVE */]);
 }
 function isReadonly(value) {
-    return !!(value && value["__v_isReadonly" /* IS_READONLY */]);
+    return !!(value && value["__v_isReadonly" /* ReactiveFlags.IS_READONLY */]);
 }
 function isShallow(value) {
-    return !!(value && value["__v_isShallow" /* IS_SHALLOW */]);
+    return !!(value && value["__v_isShallow" /* ReactiveFlags.IS_SHALLOW */]);
 }
 function isProxy(value) {
     return isReactive(value) || isReadonly(value);
 }
 function toRaw(observed) {
-    const raw = observed && observed["__v_raw" /* RAW */];
+    const raw = observed && observed["__v_raw" /* ReactiveFlags.RAW */];
     return raw ? toRaw(raw) : observed;
 }
 function markRaw(value) {
-    def(value, "__v_skip" /* SKIP */, true);
+    def(value, "__v_skip" /* ReactiveFlags.SKIP */, true);
     return value;
 }
-const toReactive = (value) => isObject$2(value) ? reactive(value) : value;
-const toReadonly = (value) => isObject$2(value) ? readonly(value) : value;
+const toReactive = (value) => isObject$1(value) ? reactive(value) : value;
+const toReadonly = (value) => isObject$1(value) ? readonly(value) : value;
 
 function trackRefValue(ref) {
     if (shouldTrack && activeEffect) {
@@ -1183,10 +1186,11 @@ class RefImpl {
         return this._value;
     }
     set value(newVal) {
-        newVal = this.__v_isShallow ? newVal : toRaw(newVal);
+        const useDirectValue = this.__v_isShallow || isShallow(newVal) || isReadonly(newVal);
+        newVal = useDirectValue ? newVal : toRaw(newVal);
         if (hasChanged(newVal, this._rawValue)) {
             this._rawValue = newVal;
-            this._value = this.__v_isShallow ? newVal : toReactive(newVal);
+            this._value = useDirectValue ? newVal : toReactive(newVal);
             triggerRefValue(this);
         }
     }
@@ -1212,40 +1216,14 @@ function proxyRefs(objectWithRefs) {
         ? objectWithRefs
         : new Proxy(objectWithRefs, shallowUnwrapHandlers);
 }
-function toRefs(object) {
-    const ret = isArray$1(object) ? new Array(object.length) : {};
-    for (const key in object) {
-        ret[key] = toRef(object, key);
-    }
-    return ret;
-}
-class ObjectRefImpl {
-    constructor(_object, _key, _defaultValue) {
-        this._object = _object;
-        this._key = _key;
-        this._defaultValue = _defaultValue;
-        this.__v_isRef = true;
-    }
-    get value() {
-        const val = this._object[this._key];
-        return val === undefined ? this._defaultValue : val;
-    }
-    set value(newVal) {
-        this._object[this._key] = newVal;
-    }
-}
-function toRef(object, key, defaultValue) {
-    const val = object[key];
-    return isRef(val)
-        ? val
-        : new ObjectRefImpl(object, key, defaultValue);
-}
 
+var _a;
 class ComputedRefImpl {
     constructor(getter, _setter, isReadonly, isSSR) {
         this._setter = _setter;
         this.dep = undefined;
         this.__v_isRef = true;
+        this[_a] = false;
         this._dirty = true;
         this.effect = new ReactiveEffect(getter, () => {
             if (!this._dirty) {
@@ -1255,7 +1233,7 @@ class ComputedRefImpl {
         });
         this.effect.computed = this;
         this.effect.active = this._cacheable = !isSSR;
-        this["__v_isReadonly" /* IS_READONLY */] = isReadonly;
+        this["__v_isReadonly" /* ReactiveFlags.IS_READONLY */] = isReadonly;
     }
     get value() {
         // the computed ref may get wrapped by other proxies e.g. readonly() #3376
@@ -1271,6 +1249,7 @@ class ComputedRefImpl {
         this._setter(newValue);
     }
 }
+_a = "__v_isReadonly" /* ReactiveFlags.IS_READONLY */;
 function computed$1(getterOrOptions, debugOptions, isSSR = false) {
     let getter;
     let setter;
@@ -1335,7 +1314,7 @@ function handleError(err, instance, type, throwInDev = true) {
         // app-level handling
         const appErrorHandler = instance.appContext.config.errorHandler;
         if (appErrorHandler) {
-            callWithErrorHandling(appErrorHandler, null, 10 /* APP_ERROR_HANDLER */, [err, exposedInstance, errorInfo]);
+            callWithErrorHandling(appErrorHandler, null, 10 /* ErrorCodes.APP_ERROR_HANDLER */, [err, exposedInstance, errorInfo]);
             return;
         }
     }
@@ -1352,15 +1331,11 @@ let isFlushing = false;
 let isFlushPending = false;
 const queue = [];
 let flushIndex = 0;
-const pendingPreFlushCbs = [];
-let activePreFlushCbs = null;
-let preFlushIndex = 0;
 const pendingPostFlushCbs = [];
 let activePostFlushCbs = null;
 let postFlushIndex = 0;
 const resolvedPromise = /*#__PURE__*/ Promise.resolve();
 let currentFlushPromise = null;
-let currentPreFlushParentJob = null;
 function nextTick(fn) {
     const p = currentFlushPromise || resolvedPromise;
     return fn ? p.then(this ? fn.bind(this) : fn) : p;
@@ -1387,9 +1362,8 @@ function queueJob(job) {
     // if the job is a watch() callback, the search will start with a +1 index to
     // allow it recursively trigger itself - it is the user's responsibility to
     // ensure it doesn't end up in an infinite loop.
-    if ((!queue.length ||
-        !queue.includes(job, isFlushing && job.allowRecurse ? flushIndex + 1 : flushIndex)) &&
-        job !== currentPreFlushParentJob) {
+    if (!queue.length ||
+        !queue.includes(job, isFlushing && job.allowRecurse ? flushIndex + 1 : flushIndex)) {
         if (job.id == null) {
             queue.push(job);
         }
@@ -1411,45 +1385,34 @@ function invalidateJob(job) {
         queue.splice(i, 1);
     }
 }
-function queueCb(cb, activeQueue, pendingQueue, index) {
+function queuePostFlushCb(cb) {
     if (!isArray$1(cb)) {
-        if (!activeQueue ||
-            !activeQueue.includes(cb, cb.allowRecurse ? index + 1 : index)) {
-            pendingQueue.push(cb);
+        if (!activePostFlushCbs ||
+            !activePostFlushCbs.includes(cb, cb.allowRecurse ? postFlushIndex + 1 : postFlushIndex)) {
+            pendingPostFlushCbs.push(cb);
         }
     }
     else {
         // if cb is an array, it is a component lifecycle hook which can only be
         // triggered by a job, which is already deduped in the main queue, so
         // we can skip duplicate check here to improve perf
-        pendingQueue.push(...cb);
+        pendingPostFlushCbs.push(...cb);
     }
     queueFlush();
 }
-function queuePreFlushCb(cb) {
-    queueCb(cb, activePreFlushCbs, pendingPreFlushCbs, preFlushIndex);
-}
-function queuePostFlushCb(cb) {
-    queueCb(cb, activePostFlushCbs, pendingPostFlushCbs, postFlushIndex);
-}
-function flushPreFlushCbs(seen, parentJob = null) {
-    if (pendingPreFlushCbs.length) {
-        currentPreFlushParentJob = parentJob;
-        activePreFlushCbs = [...new Set(pendingPreFlushCbs)];
-        pendingPreFlushCbs.length = 0;
-        for (preFlushIndex = 0; preFlushIndex < activePreFlushCbs.length; preFlushIndex++) {
-            activePreFlushCbs[preFlushIndex]();
+function flushPreFlushCbs(seen, 
+// if currently flushing, skip the current job itself
+i = isFlushing ? flushIndex + 1 : 0) {
+    for (; i < queue.length; i++) {
+        const cb = queue[i];
+        if (cb && cb.pre) {
+            queue.splice(i, 1);
+            i--;
+            cb();
         }
-        activePreFlushCbs = null;
-        preFlushIndex = 0;
-        currentPreFlushParentJob = null;
-        // recursively flush until it drains
-        flushPreFlushCbs(seen, parentJob);
     }
 }
 function flushPostFlushCbs(seen) {
-    // flush any pre cbs queued during the flush (e.g. pre watchers)
-    flushPreFlushCbs();
     if (pendingPostFlushCbs.length) {
         const deduped = [...new Set(pendingPostFlushCbs)];
         pendingPostFlushCbs.length = 0;
@@ -1468,10 +1431,19 @@ function flushPostFlushCbs(seen) {
     }
 }
 const getId = (job) => job.id == null ? Infinity : job.id;
+const comparator = (a, b) => {
+    const diff = getId(a) - getId(b);
+    if (diff === 0) {
+        if (a.pre && !b.pre)
+            return -1;
+        if (b.pre && !a.pre)
+            return 1;
+    }
+    return diff;
+};
 function flushJobs(seen) {
     isFlushPending = false;
     isFlushing = true;
-    flushPreFlushCbs(seen);
     // Sort queue before flush.
     // This ensures that:
     // 1. Components are updated from parent to child. (because parent is always
@@ -1479,7 +1451,7 @@ function flushJobs(seen) {
     //    priority number)
     // 2. If a component is unmounted during a parent component's update,
     //    its update can be skipped.
-    queue.sort((a, b) => getId(a) - getId(b));
+    queue.sort(comparator);
     // conditional usage of checkRecursiveUpdate must be determined out of
     // try ... catch block since Rollup by default de-optimizes treeshaking
     // inside try-catch. This can leave all warning code unshaked. Although
@@ -1492,7 +1464,7 @@ function flushJobs(seen) {
             if (job && job.active !== false) {
                 if (("production" !== 'production') && check(job)) ;
                 // console.log(`running:`, job.id)
-                callWithErrorHandling(job, null, 14 /* SCHEDULER */);
+                callWithErrorHandling(job, null, 14 /* ErrorCodes.SCHEDULER */);
             }
         }
     }
@@ -1504,10 +1476,8 @@ function flushJobs(seen) {
         currentFlushPromise = null;
         // some postFlushCb queued jobs!
         // keep flushing until it drains.
-        if (queue.length ||
-            pendingPreFlushCbs.length ||
-            pendingPostFlushCbs.length) {
-            flushJobs(seen);
+        if (queue.length || pendingPostFlushCbs.length) {
+            flushJobs();
         }
     }
 }
@@ -1540,7 +1510,7 @@ function emit$1(instance, event, ...rawArgs) {
         handler = props[(handlerName = toHandlerKey(hyphenate(event)))];
     }
     if (handler) {
-        callWithAsyncErrorHandling(handler, instance, 6 /* COMPONENT_EVENT_HANDLER */, args);
+        callWithAsyncErrorHandling(handler, instance, 6 /* ErrorCodes.COMPONENT_EVENT_HANDLER */, args);
     }
     const onceHandler = props[handlerName + `Once`];
     if (onceHandler) {
@@ -1551,7 +1521,7 @@ function emit$1(instance, event, ...rawArgs) {
             return;
         }
         instance.emitted[handlerName] = true;
-        callWithAsyncErrorHandling(onceHandler, instance, 6 /* COMPONENT_EVENT_HANDLER */, args);
+        callWithAsyncErrorHandling(onceHandler, instance, 6 /* ErrorCodes.COMPONENT_EVENT_HANDLER */, args);
     }
 }
 function normalizeEmitsOptions(comp, appContext, asMixin = false) {
@@ -1583,7 +1553,9 @@ function normalizeEmitsOptions(comp, appContext, asMixin = false) {
         }
     }
     if (!raw && !hasExtends) {
-        cache.set(comp, null);
+        if (isObject$1(comp)) {
+            cache.set(comp, null);
+        }
         return null;
     }
     if (isArray$1(raw)) {
@@ -1592,7 +1564,9 @@ function normalizeEmitsOptions(comp, appContext, asMixin = false) {
     else {
         extend(normalized, raw);
     }
-    cache.set(comp, normalized);
+    if (isObject$1(comp)) {
+        cache.set(comp, normalized);
+    }
     return normalized;
 }
 // Check if an incoming prop key is a declared emit event listener.
@@ -1603,9 +1577,9 @@ function isEmitListener(options, key) {
         return false;
     }
     key = key.slice(2).replace(/Once$/, '');
-    return (hasOwn$2(options, key[0].toLowerCase() + key.slice(1)) ||
-        hasOwn$2(options, hyphenate(key)) ||
-        hasOwn$2(options, key));
+    return (hasOwn$1(options, key[0].toLowerCase() + key.slice(1)) ||
+        hasOwn$1(options, hyphenate(key)) ||
+        hasOwn$1(options, key));
 }
 
 /**
@@ -1692,7 +1666,7 @@ function renderComponentRoot(instance) {
     let fallthroughAttrs;
     const prev = setCurrentRenderingInstance(instance);
     try {
-        if (vnode.shapeFlag & 4 /* STATEFUL_COMPONENT */) {
+        if (vnode.shapeFlag & 4 /* ShapeFlags.STATEFUL_COMPONENT */) {
             // withProxy is a proxy with a different `has` trap only for
             // runtime-compiled render functions using `with` block.
             const proxyToUse = withProxy || proxy;
@@ -1723,7 +1697,7 @@ function renderComponentRoot(instance) {
     }
     catch (err) {
         blockStack.length = 0;
-        handleError(err, instance, 1 /* RENDER_FUNCTION */);
+        handleError(err, instance, 1 /* ErrorCodes.RENDER_FUNCTION */);
         result = createVNode(Comment);
     }
     // attr merging
@@ -1734,7 +1708,7 @@ function renderComponentRoot(instance) {
         const keys = Object.keys(fallthroughAttrs);
         const { shapeFlag } = root;
         if (keys.length) {
-            if (shapeFlag & (1 /* ELEMENT */ | 6 /* COMPONENT */)) {
+            if (shapeFlag & (1 /* ShapeFlags.ELEMENT */ | 6 /* ShapeFlags.COMPONENT */)) {
                 if (propsOptions && keys.some(isModelListener)) {
                     // If a v-model listener (onUpdate:xxx) has a corresponding declared
                     // prop, it indicates this component expects to handle v-model and
@@ -1789,19 +1763,19 @@ function shouldUpdateComponent(prevVNode, nextVNode, optimized) {
         return true;
     }
     if (optimized && patchFlag >= 0) {
-        if (patchFlag & 1024 /* DYNAMIC_SLOTS */) {
+        if (patchFlag & 1024 /* PatchFlags.DYNAMIC_SLOTS */) {
             // slot content that references values that might have changed,
             // e.g. in a v-for
             return true;
         }
-        if (patchFlag & 16 /* FULL_PROPS */) {
+        if (patchFlag & 16 /* PatchFlags.FULL_PROPS */) {
             if (!prevProps) {
                 return !!nextProps;
             }
             // presence of this flag indicates props are always non-null
             return hasPropsChanged(prevProps, nextProps, emits);
         }
-        else if (patchFlag & 8 /* PROPS */) {
+        else if (patchFlag & 8 /* PatchFlags.PROPS */) {
             const dynamicProps = nextVNode.dynamicProps;
             for (let i = 0; i < dynamicProps.length; i++) {
                 const key = dynamicProps[i];
@@ -1940,7 +1914,7 @@ function doWatch(source, cb, { immediate, deep, flush, onTrack, onTrigger } = EM
                 return traverse(s);
             }
             else if (isFunction$1(s)) {
-                return callWithErrorHandling(s, instance, 2 /* WATCH_GETTER */);
+                return callWithErrorHandling(s, instance, 2 /* ErrorCodes.WATCH_GETTER */);
             }
             else ;
         });
@@ -1948,7 +1922,7 @@ function doWatch(source, cb, { immediate, deep, flush, onTrack, onTrigger } = EM
     else if (isFunction$1(source)) {
         if (cb) {
             // getter with cb
-            getter = () => callWithErrorHandling(source, instance, 2 /* WATCH_GETTER */);
+            getter = () => callWithErrorHandling(source, instance, 2 /* ErrorCodes.WATCH_GETTER */);
         }
         else {
             // no cb -> simple effect
@@ -1959,7 +1933,7 @@ function doWatch(source, cb, { immediate, deep, flush, onTrack, onTrigger } = EM
                 if (cleanup) {
                     cleanup();
                 }
-                return callWithAsyncErrorHandling(source, instance, 3 /* WATCH_CALLBACK */, [onCleanup]);
+                return callWithAsyncErrorHandling(source, instance, 3 /* ErrorCodes.WATCH_CALLBACK */, [onCleanup]);
             };
         }
     }
@@ -1973,7 +1947,7 @@ function doWatch(source, cb, { immediate, deep, flush, onTrack, onTrigger } = EM
     let cleanup;
     let onCleanup = (fn) => {
         cleanup = effect.onStop = () => {
-            callWithErrorHandling(fn, instance, 4 /* WATCH_CLEANUP */);
+            callWithErrorHandling(fn, instance, 4 /* ErrorCodes.WATCH_CLEANUP */);
         };
     };
     // in SSR there is no need to setup an actual effect, and it should be noop
@@ -1985,7 +1959,7 @@ function doWatch(source, cb, { immediate, deep, flush, onTrack, onTrigger } = EM
             getter();
         }
         else if (immediate) {
-            callWithAsyncErrorHandling(cb, instance, 3 /* WATCH_CALLBACK */, [
+            callWithAsyncErrorHandling(cb, instance, 3 /* ErrorCodes.WATCH_CALLBACK */, [
                 getter(),
                 isMultiSource ? [] : undefined,
                 onCleanup
@@ -2011,7 +1985,7 @@ function doWatch(source, cb, { immediate, deep, flush, onTrack, onTrigger } = EM
                 if (cleanup) {
                     cleanup();
                 }
-                callWithAsyncErrorHandling(cb, instance, 3 /* WATCH_CALLBACK */, [
+                callWithAsyncErrorHandling(cb, instance, 3 /* ErrorCodes.WATCH_CALLBACK */, [
                     newValue,
                     // pass undefined as the old value when it's changed for the first time
                     oldValue === INITIAL_WATCHER_VALUE ? undefined : oldValue,
@@ -2037,7 +2011,10 @@ function doWatch(source, cb, { immediate, deep, flush, onTrack, onTrigger } = EM
     }
     else {
         // default: 'pre'
-        scheduler = () => queuePreFlushCb(job);
+        job.pre = true;
+        if (instance)
+            job.id = instance.uid;
+        scheduler = () => queueJob(job);
     }
     const effect = new ReactiveEffect(getter, scheduler);
     // initial run
@@ -2100,7 +2077,7 @@ function createPathGetter(ctx, path) {
     };
 }
 function traverse(value, seen) {
-    if (!isObject$2(value) || value["__v_skip" /* SKIP */]) {
+    if (!isObject$1(value) || value["__v_skip" /* ReactiveFlags.SKIP */]) {
         return value;
     }
     seen = seen || new Set();
@@ -2270,7 +2247,7 @@ function resolveTransitionHooks(vnode, props, state, instance) {
     const leavingVNodesCache = getLeavingNodesForType(state, vnode);
     const callHook = (hook, args) => {
         hook &&
-            callWithAsyncErrorHandling(hook, instance, 9 /* TRANSITION_HOOK */, args);
+            callWithAsyncErrorHandling(hook, instance, 9 /* ErrorCodes.TRANSITION_HOOK */, args);
     };
     const callAsyncHook = (hook, args) => {
         const done = args[1];
@@ -2406,10 +2383,10 @@ function getKeepAliveChild(vnode) {
         : vnode;
 }
 function setTransitionHooks(vnode, hooks) {
-    if (vnode.shapeFlag & 6 /* COMPONENT */ && vnode.component) {
+    if (vnode.shapeFlag & 6 /* ShapeFlags.COMPONENT */ && vnode.component) {
         setTransitionHooks(vnode.component.subTree, hooks);
     }
-    else if (vnode.shapeFlag & 128 /* SUSPENSE */) {
+    else if (vnode.shapeFlag & 128 /* ShapeFlags.SUSPENSE */) {
         vnode.ssContent.transition = hooks.clone(vnode.ssContent);
         vnode.ssFallback.transition = hooks.clone(vnode.ssFallback);
     }
@@ -2428,7 +2405,7 @@ function getTransitionRawChildren(children, keepComment = false, parentKey) {
             : String(parentKey) + String(child.key != null ? child.key : i);
         // handle fragment children case, e.g. v-for
         if (child.type === Fragment) {
-            if (child.patchFlag & 128 /* KEYED_FRAGMENT */)
+            if (child.patchFlag & 128 /* PatchFlags.KEYED_FRAGMENT */)
                 keyedFragmentCount++;
             ret = ret.concat(getTransitionRawChildren(child.children, keepComment, key));
         }
@@ -2443,7 +2420,7 @@ function getTransitionRawChildren(children, keepComment = false, parentKey) {
     // these children to force full diffs to ensure correct behavior.
     if (keyedFragmentCount > 1) {
         for (let i = 0; i < ret.length; i++) {
-            ret[i].patchFlag = -2 /* BAIL */;
+            ret[i].patchFlag = -2 /* PatchFlags.BAIL */;
         }
     }
     return ret;
@@ -2458,10 +2435,10 @@ const isAsyncWrapper = (i) => !!i.type.__asyncLoader;
 
 const isKeepAlive = (vnode) => vnode.type.__isKeepAlive;
 function onActivated(hook, target) {
-    registerKeepAliveHook(hook, "a" /* ACTIVATED */, target);
+    registerKeepAliveHook(hook, "a" /* LifecycleHooks.ACTIVATED */, target);
 }
 function onDeactivated(hook, target) {
-    registerKeepAliveHook(hook, "da" /* DEACTIVATED */, target);
+    registerKeepAliveHook(hook, "da" /* LifecycleHooks.DEACTIVATED */, target);
 }
 function registerKeepAliveHook(hook, type, target = currentInstance) {
     // cache the deactivate branch check wrapper for injected hooks so the same
@@ -2538,19 +2515,19 @@ function injectHook(type, hook, target = currentInstance, prepend = false) {
 }
 const createHook = (lifecycle) => (hook, target = currentInstance) => 
 // post-create lifecycle registrations are noops during SSR (except for serverPrefetch)
-(!isInSSRComponentSetup || lifecycle === "sp" /* SERVER_PREFETCH */) &&
+(!isInSSRComponentSetup || lifecycle === "sp" /* LifecycleHooks.SERVER_PREFETCH */) &&
     injectHook(lifecycle, hook, target);
-const onBeforeMount = createHook("bm" /* BEFORE_MOUNT */);
-const onMounted = createHook("m" /* MOUNTED */);
-const onBeforeUpdate = createHook("bu" /* BEFORE_UPDATE */);
-const onUpdated = createHook("u" /* UPDATED */);
-const onBeforeUnmount = createHook("bum" /* BEFORE_UNMOUNT */);
-const onUnmounted = createHook("um" /* UNMOUNTED */);
-const onServerPrefetch = createHook("sp" /* SERVER_PREFETCH */);
-const onRenderTriggered = createHook("rtg" /* RENDER_TRIGGERED */);
-const onRenderTracked = createHook("rtc" /* RENDER_TRACKED */);
+const onBeforeMount = createHook("bm" /* LifecycleHooks.BEFORE_MOUNT */);
+const onMounted = createHook("m" /* LifecycleHooks.MOUNTED */);
+const onBeforeUpdate = createHook("bu" /* LifecycleHooks.BEFORE_UPDATE */);
+const onUpdated = createHook("u" /* LifecycleHooks.UPDATED */);
+const onBeforeUnmount = createHook("bum" /* LifecycleHooks.BEFORE_UNMOUNT */);
+const onUnmounted = createHook("um" /* LifecycleHooks.UNMOUNTED */);
+const onServerPrefetch = createHook("sp" /* LifecycleHooks.SERVER_PREFETCH */);
+const onRenderTriggered = createHook("rtg" /* LifecycleHooks.RENDER_TRIGGERED */);
+const onRenderTracked = createHook("rtc" /* LifecycleHooks.RENDER_TRACKED */);
 function onErrorCaptured(hook, target = currentInstance) {
-    injectHook("ec" /* ERROR_CAPTURED */, hook, target);
+    injectHook("ec" /* LifecycleHooks.ERROR_CAPTURED */, hook, target);
 }
 function invokeDirectiveHook(vnode, prevVNode, instance, name) {
     const bindings = vnode.dirs;
@@ -2565,7 +2542,7 @@ function invokeDirectiveHook(vnode, prevVNode, instance, name) {
             // disable tracking inside all lifecycle hooks
             // since they can potentially be called inside effects.
             pauseTracking();
-            callWithAsyncErrorHandling(hook, instance, 8 /* DIRECTIVE_HOOK */, [
+            callWithAsyncErrorHandling(hook, instance, 8 /* ErrorCodes.DIRECTIVE_HOOK */, [
                 vnode.el,
                 binding,
                 vnode,
@@ -2595,7 +2572,7 @@ function renderList(source, renderItem, cache, index) {
             ret[i] = renderItem(i + 1, i, undefined, cached && cached[i]);
         }
     }
-    else if (isObject$2(source)) {
+    else if (isObject$1(source)) {
         if (source[Symbol.iterator]) {
             ret = Array.from(source, (item, i) => renderItem(item, i, undefined, cached && cached[i]));
         }
@@ -2662,39 +2639,39 @@ const PublicInstanceProxyHandlers = {
             const n = accessCache[key];
             if (n !== undefined) {
                 switch (n) {
-                    case 1 /* SETUP */:
+                    case 1 /* AccessTypes.SETUP */:
                         return setupState[key];
-                    case 2 /* DATA */:
+                    case 2 /* AccessTypes.DATA */:
                         return data[key];
-                    case 4 /* CONTEXT */:
+                    case 4 /* AccessTypes.CONTEXT */:
                         return ctx[key];
-                    case 3 /* PROPS */:
+                    case 3 /* AccessTypes.PROPS */:
                         return props[key];
                     // default: just fallthrough
                 }
             }
-            else if (setupState !== EMPTY_OBJ && hasOwn$2(setupState, key)) {
-                accessCache[key] = 1 /* SETUP */;
+            else if (setupState !== EMPTY_OBJ && hasOwn$1(setupState, key)) {
+                accessCache[key] = 1 /* AccessTypes.SETUP */;
                 return setupState[key];
             }
-            else if (data !== EMPTY_OBJ && hasOwn$2(data, key)) {
-                accessCache[key] = 2 /* DATA */;
+            else if (data !== EMPTY_OBJ && hasOwn$1(data, key)) {
+                accessCache[key] = 2 /* AccessTypes.DATA */;
                 return data[key];
             }
             else if (
             // only cache other properties when instance has declared (thus stable)
             // props
             (normalizedProps = instance.propsOptions[0]) &&
-                hasOwn$2(normalizedProps, key)) {
-                accessCache[key] = 3 /* PROPS */;
+                hasOwn$1(normalizedProps, key)) {
+                accessCache[key] = 3 /* AccessTypes.PROPS */;
                 return props[key];
             }
-            else if (ctx !== EMPTY_OBJ && hasOwn$2(ctx, key)) {
-                accessCache[key] = 4 /* CONTEXT */;
+            else if (ctx !== EMPTY_OBJ && hasOwn$1(ctx, key)) {
+                accessCache[key] = 4 /* AccessTypes.CONTEXT */;
                 return ctx[key];
             }
             else if (shouldCacheAccess) {
-                accessCache[key] = 0 /* OTHER */;
+                accessCache[key] = 0 /* AccessTypes.OTHER */;
             }
         }
         const publicGetter = publicPropertiesMap[key];
@@ -2702,7 +2679,7 @@ const PublicInstanceProxyHandlers = {
         // public $xxx properties
         if (publicGetter) {
             if (key === '$attrs') {
-                track(instance, "get" /* GET */, key);
+                track(instance, "get" /* TrackOpTypes.GET */, key);
             }
             return publicGetter(instance);
         }
@@ -2712,15 +2689,15 @@ const PublicInstanceProxyHandlers = {
             (cssModule = cssModule[key])) {
             return cssModule;
         }
-        else if (ctx !== EMPTY_OBJ && hasOwn$2(ctx, key)) {
+        else if (ctx !== EMPTY_OBJ && hasOwn$1(ctx, key)) {
             // user may set custom properties to `this` that start with `$`
-            accessCache[key] = 4 /* CONTEXT */;
+            accessCache[key] = 4 /* AccessTypes.CONTEXT */;
             return ctx[key];
         }
         else if (
         // global properties
         ((globalProperties = appContext.config.globalProperties),
-            hasOwn$2(globalProperties, key))) {
+            hasOwn$1(globalProperties, key))) {
             {
                 return globalProperties[key];
             }
@@ -2729,15 +2706,15 @@ const PublicInstanceProxyHandlers = {
     },
     set({ _: instance }, key, value) {
         const { data, setupState, ctx } = instance;
-        if (setupState !== EMPTY_OBJ && hasOwn$2(setupState, key)) {
+        if (setupState !== EMPTY_OBJ && hasOwn$1(setupState, key)) {
             setupState[key] = value;
             return true;
         }
-        else if (data !== EMPTY_OBJ && hasOwn$2(data, key)) {
+        else if (data !== EMPTY_OBJ && hasOwn$1(data, key)) {
             data[key] = value;
             return true;
         }
-        else if (hasOwn$2(instance.props, key)) {
+        else if (hasOwn$1(instance.props, key)) {
             return false;
         }
         if (key[0] === '$' && key.slice(1) in instance) {
@@ -2753,19 +2730,19 @@ const PublicInstanceProxyHandlers = {
     has({ _: { data, setupState, accessCache, ctx, appContext, propsOptions } }, key) {
         let normalizedProps;
         return (!!accessCache[key] ||
-            (data !== EMPTY_OBJ && hasOwn$2(data, key)) ||
-            (setupState !== EMPTY_OBJ && hasOwn$2(setupState, key)) ||
-            ((normalizedProps = propsOptions[0]) && hasOwn$2(normalizedProps, key)) ||
-            hasOwn$2(ctx, key) ||
-            hasOwn$2(publicPropertiesMap, key) ||
-            hasOwn$2(appContext.config.globalProperties, key));
+            (data !== EMPTY_OBJ && hasOwn$1(data, key)) ||
+            (setupState !== EMPTY_OBJ && hasOwn$1(setupState, key)) ||
+            ((normalizedProps = propsOptions[0]) && hasOwn$1(normalizedProps, key)) ||
+            hasOwn$1(ctx, key) ||
+            hasOwn$1(publicPropertiesMap, key) ||
+            hasOwn$1(appContext.config.globalProperties, key));
     },
     defineProperty(target, key, descriptor) {
         if (descriptor.get != null) {
             // invalidate key cache of a getter based property #5417
             target._.accessCache[key] = 0;
         }
-        else if (hasOwn$2(descriptor, 'value')) {
+        else if (hasOwn$1(descriptor, 'value')) {
             this.set(target, key, descriptor.value, null);
         }
         return Reflect.defineProperty(target, key, descriptor);
@@ -2781,7 +2758,7 @@ function applyOptions(instance) {
     // call beforeCreate first before accessing other options since
     // the hook may mutate resolved options (#2791)
     if (options.beforeCreate) {
-        callHook(options.beforeCreate, instance, "bc" /* BEFORE_CREATE */);
+        callHook(options.beforeCreate, instance, "bc" /* LifecycleHooks.BEFORE_CREATE */);
     }
     const { 
     // state
@@ -2818,7 +2795,7 @@ function applyOptions(instance) {
     }
     if (dataOptions) {
         const data = dataOptions.call(publicThis, publicThis);
-        if (!isObject$2(data)) ;
+        if (!isObject$1(data)) ;
         else {
             instance.data = reactive(data);
         }
@@ -2862,7 +2839,7 @@ function applyOptions(instance) {
         });
     }
     if (created) {
-        callHook(created, instance, "c" /* CREATED */);
+        callHook(created, instance, "c" /* LifecycleHooks.CREATED */);
     }
     function registerLifecycleHook(register, hook) {
         if (isArray$1(hook)) {
@@ -2919,7 +2896,7 @@ function resolveInjections(injectOptions, ctx, checkDuplicateProperties = NOOP, 
     for (const key in injectOptions) {
         const opt = injectOptions[key];
         let injected;
-        if (isObject$2(opt)) {
+        if (isObject$1(opt)) {
             if ('default' in opt) {
                 injected = inject(opt.from || key, opt.default, true /* treat default function as factory */);
             }
@@ -2967,7 +2944,7 @@ function createWatcher(raw, ctx, publicThis, key) {
     else if (isFunction$1(raw)) {
         watch(getter, raw.bind(publicThis));
     }
-    else if (isObject$2(raw)) {
+    else if (isObject$1(raw)) {
         if (isArray$1(raw)) {
             raw.forEach(r => createWatcher(r, ctx, publicThis, key));
         }
@@ -3008,7 +2985,9 @@ function resolveMergedOptions(instance) {
         }
         mergeOptions(resolved, base, optionMergeStrategies);
     }
-    cache.set(base, resolved);
+    if (isObject$1(base)) {
+        cache.set(base, resolved);
+    }
     return resolved;
 }
 function mergeOptions(to, from, strats, asMixin = false) {
@@ -3140,8 +3119,8 @@ function updateProps(instance, rawProps, rawPrevProps, optimized) {
     // - #1942 if hmr is enabled with sfc component
     // - vite#872 non-sfc component used by sfc component
     (optimized || patchFlag > 0) &&
-        !(patchFlag & 16 /* FULL_PROPS */)) {
-        if (patchFlag & 8 /* PROPS */) {
+        !(patchFlag & 16 /* PatchFlags.FULL_PROPS */)) {
+        if (patchFlag & 8 /* PatchFlags.PROPS */) {
             // Compiler-generated props & no keys change, just set the updated
             // the props.
             const propsToUpdate = instance.vnode.dynamicProps;
@@ -3156,7 +3135,7 @@ function updateProps(instance, rawProps, rawPrevProps, optimized) {
                 if (options) {
                     // attr / props separation was done on init and will be consistent
                     // in this code path, so just check if attrs have it.
-                    if (hasOwn$2(attrs, key)) {
+                    if (hasOwn$1(attrs, key)) {
                         if (value !== attrs[key]) {
                             attrs[key] = value;
                             hasAttrsChanged = true;
@@ -3187,10 +3166,10 @@ function updateProps(instance, rawProps, rawPrevProps, optimized) {
         for (const key in rawCurrentProps) {
             if (!rawProps ||
                 // for camelCase
-                (!hasOwn$2(rawProps, key) &&
+                (!hasOwn$1(rawProps, key) &&
                     // it's possible the original props was passed in as kebab-case
                     // and converted to camelCase (#955)
-                    ((kebabKey = hyphenate(key)) === key || !hasOwn$2(rawProps, kebabKey)))) {
+                    ((kebabKey = hyphenate(key)) === key || !hasOwn$1(rawProps, kebabKey)))) {
                 if (options) {
                     if (rawPrevProps &&
                         // for camelCase
@@ -3210,7 +3189,7 @@ function updateProps(instance, rawProps, rawPrevProps, optimized) {
         if (attrs !== rawCurrentProps) {
             for (const key in attrs) {
                 if (!rawProps ||
-                    (!hasOwn$2(rawProps, key) &&
+                    (!hasOwn$1(rawProps, key) &&
                         (!false ))) {
                     delete attrs[key];
                     hasAttrsChanged = true;
@@ -3220,7 +3199,7 @@ function updateProps(instance, rawProps, rawPrevProps, optimized) {
     }
     // trigger updates for $attrs in case it's used in component slots
     if (hasAttrsChanged) {
-        trigger(instance, "set" /* SET */, '$attrs');
+        trigger(instance, "set" /* TriggerOpTypes.SET */, '$attrs');
     }
 }
 function setFullProps(instance, rawProps, props, attrs) {
@@ -3237,7 +3216,7 @@ function setFullProps(instance, rawProps, props, attrs) {
             // prop option names are camelized during normalization, so to support
             // kebab -> camel conversion here we need to camelize the key.
             let camelKey;
-            if (options && hasOwn$2(options, (camelKey = camelize(key)))) {
+            if (options && hasOwn$1(options, (camelKey = camelize(key)))) {
                 if (!needCastKeys || !needCastKeys.includes(camelKey)) {
                     props[camelKey] = value;
                 }
@@ -3258,7 +3237,7 @@ function setFullProps(instance, rawProps, props, attrs) {
         const castValues = rawCastValues || EMPTY_OBJ;
         for (let i = 0; i < needCastKeys.length; i++) {
             const key = needCastKeys[i];
-            props[key] = resolvePropValue(options, rawCurrentProps, key, castValues[key], instance, !hasOwn$2(castValues, key));
+            props[key] = resolvePropValue(options, rawCurrentProps, key, castValues[key], instance, !hasOwn$1(castValues, key));
         }
     }
     return hasAttrsChanged;
@@ -3266,7 +3245,7 @@ function setFullProps(instance, rawProps, props, attrs) {
 function resolvePropValue(options, props, key, value, instance, isAbsent) {
     const opt = options[key];
     if (opt != null) {
-        const hasDefault = hasOwn$2(opt, 'default');
+        const hasDefault = hasOwn$1(opt, 'default');
         // default values
         if (hasDefault && value === undefined) {
             const defaultValue = opt.default;
@@ -3286,11 +3265,11 @@ function resolvePropValue(options, props, key, value, instance, isAbsent) {
             }
         }
         // boolean casting
-        if (opt[0 /* shouldCast */]) {
+        if (opt[0 /* BooleanFlags.shouldCast */]) {
             if (isAbsent && !hasDefault) {
                 value = false;
             }
-            else if (opt[1 /* shouldCastTrue */] &&
+            else if (opt[1 /* BooleanFlags.shouldCastTrue */] &&
                 (value === '' || value === hyphenate(key))) {
                 value = true;
             }
@@ -3328,7 +3307,9 @@ function normalizePropsOptions(comp, appContext, asMixin = false) {
         }
     }
     if (!raw && !hasExtends) {
-        cache.set(comp, EMPTY_ARR);
+        if (isObject$1(comp)) {
+            cache.set(comp, EMPTY_ARR);
+        }
         return EMPTY_ARR;
     }
     if (isArray$1(raw)) {
@@ -3349,11 +3330,11 @@ function normalizePropsOptions(comp, appContext, asMixin = false) {
                 if (prop) {
                     const booleanIndex = getTypeIndex(Boolean, prop.type);
                     const stringIndex = getTypeIndex(String, prop.type);
-                    prop[0 /* shouldCast */] = booleanIndex > -1;
-                    prop[1 /* shouldCastTrue */] =
+                    prop[0 /* BooleanFlags.shouldCast */] = booleanIndex > -1;
+                    prop[1 /* BooleanFlags.shouldCastTrue */] =
                         stringIndex < 0 || booleanIndex < stringIndex;
                     // if the prop needs boolean casting or default value
-                    if (booleanIndex > -1 || hasOwn$2(prop, 'default')) {
+                    if (booleanIndex > -1 || hasOwn$1(prop, 'default')) {
                         needCastKeys.push(normalizedKey);
                     }
                 }
@@ -3361,7 +3342,9 @@ function normalizePropsOptions(comp, appContext, asMixin = false) {
         }
     }
     const res = [normalized, needCastKeys];
-    cache.set(comp, res);
+    if (isObject$1(comp)) {
+        cache.set(comp, res);
+    }
     return res;
 }
 function validatePropName(key) {
@@ -3424,7 +3407,7 @@ const normalizeVNodeSlots = (instance, children) => {
     instance.slots.default = () => normalized;
 };
 const initSlots = (instance, children) => {
-    if (instance.vnode.shapeFlag & 32 /* SLOTS_CHILDREN */) {
+    if (instance.vnode.shapeFlag & 32 /* ShapeFlags.SLOTS_CHILDREN */) {
         const type = children._;
         if (type) {
             // users can get the shallow readonly version of the slots object through `this.$slots`,
@@ -3449,11 +3432,11 @@ const updateSlots = (instance, children, optimized) => {
     const { vnode, slots } = instance;
     let needDeletionCheck = true;
     let deletionComparisonTarget = EMPTY_OBJ;
-    if (vnode.shapeFlag & 32 /* SLOTS_CHILDREN */) {
+    if (vnode.shapeFlag & 32 /* ShapeFlags.SLOTS_CHILDREN */) {
         const type = children._;
         if (type) {
             // compiled slots.
-            if (optimized && type === 1 /* STABLE */) {
+            if (optimized && type === 1 /* SlotFlags.STABLE */) {
                 // compiled AND stable.
                 // no need to update, and skip stale slots removal.
                 needDeletionCheck = false;
@@ -3466,7 +3449,7 @@ const updateSlots = (instance, children, optimized) => {
                 // when rendering the optimized slots by manually written render function,
                 // we need to delete the `slots._` flag if necessary to make subsequent updates reliable,
                 // i.e. let the `renderSlot` create the bailed Fragment
-                if (!optimized && type === 1 /* STABLE */) {
+                if (!optimized && type === 1 /* SlotFlags.STABLE */) {
                     delete slots._;
                 }
             }
@@ -3519,7 +3502,7 @@ function createAppAPI(render, hydrate) {
         if (!isFunction$1(rootComponent)) {
             rootComponent = Object.assign({}, rootComponent);
         }
-        if (rootProps != null && !isObject$2(rootProps)) {
+        if (rootProps != null && !isObject$1(rootProps)) {
             rootProps = null;
         }
         const context = createAppContext();
@@ -3619,7 +3602,7 @@ function setRef(rawRef, oldRawRef, parentSuspense, vnode, isUnmount = false) {
         // because the template ref is forwarded to inner component
         return;
     }
-    const refValue = vnode.shapeFlag & 4 /* STATEFUL_COMPONENT */
+    const refValue = vnode.shapeFlag & 4 /* ShapeFlags.STATEFUL_COMPONENT */
         ? getExposeProxy(vnode.component) || vnode.component.proxy
         : vnode.el;
     const value = isUnmount ? null : refValue;
@@ -3631,7 +3614,7 @@ function setRef(rawRef, oldRawRef, parentSuspense, vnode, isUnmount = false) {
     if (oldRef != null && oldRef !== ref) {
         if (isString$1(oldRef)) {
             refs[oldRef] = null;
-            if (hasOwn$2(setupState, oldRef)) {
+            if (hasOwn$1(setupState, oldRef)) {
                 setupState[oldRef] = null;
             }
         }
@@ -3640,7 +3623,7 @@ function setRef(rawRef, oldRawRef, parentSuspense, vnode, isUnmount = false) {
         }
     }
     if (isFunction$1(ref)) {
-        callWithErrorHandling(ref, owner, 12 /* FUNCTION_REF */, [value, refs]);
+        callWithErrorHandling(ref, owner, 12 /* ErrorCodes.FUNCTION_REF */, [value, refs]);
     }
     else {
         const _isString = isString$1(ref);
@@ -3656,7 +3639,7 @@ function setRef(rawRef, oldRawRef, parentSuspense, vnode, isUnmount = false) {
                         if (!isArray$1(existing)) {
                             if (_isString) {
                                 refs[ref] = [refValue];
-                                if (hasOwn$2(setupState, ref)) {
+                                if (hasOwn$1(setupState, ref)) {
                                     setupState[ref] = refs[ref];
                                 }
                             }
@@ -3673,11 +3656,11 @@ function setRef(rawRef, oldRawRef, parentSuspense, vnode, isUnmount = false) {
                 }
                 else if (_isString) {
                     refs[ref] = value;
-                    if (hasOwn$2(setupState, ref)) {
+                    if (hasOwn$1(setupState, ref)) {
                         setupState[ref] = value;
                     }
                 }
-                else if (isRef(ref)) {
+                else if (_isRef) {
                     ref.value = value;
                     if (rawRef.k)
                         refs[rawRef.k] = value;
@@ -3732,7 +3715,7 @@ function baseCreateRenderer(options, createHydrationFns) {
             unmount(n1, parentComponent, parentSuspense, true);
             n1 = null;
         }
-        if (n2.patchFlag === -2 /* BAIL */) {
+        if (n2.patchFlag === -2 /* PatchFlags.BAIL */) {
             optimized = false;
             n2.dynamicChildren = null;
         }
@@ -3753,16 +3736,16 @@ function baseCreateRenderer(options, createHydrationFns) {
                 processFragment(n1, n2, container, anchor, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized);
                 break;
             default:
-                if (shapeFlag & 1 /* ELEMENT */) {
+                if (shapeFlag & 1 /* ShapeFlags.ELEMENT */) {
                     processElement(n1, n2, container, anchor, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized);
                 }
-                else if (shapeFlag & 6 /* COMPONENT */) {
+                else if (shapeFlag & 6 /* ShapeFlags.COMPONENT */) {
                     processComponent(n1, n2, container, anchor, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized);
                 }
-                else if (shapeFlag & 64 /* TELEPORT */) {
+                else if (shapeFlag & 64 /* ShapeFlags.TELEPORT */) {
                     type.process(n1, n2, container, anchor, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized, internals);
                 }
-                else if (shapeFlag & 128 /* SUSPENSE */) {
+                else if (shapeFlag & 128 /* ShapeFlags.SUSPENSE */) {
                     type.process(n1, n2, container, anchor, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized, internals);
                 }
                 else ;
@@ -3828,7 +3811,7 @@ function baseCreateRenderer(options, createHydrationFns) {
         const { type, props, shapeFlag, transition, patchFlag, dirs } = vnode;
         if (vnode.el &&
             hostCloneNode !== undefined &&
-            patchFlag === -1 /* HOISTED */) {
+            patchFlag === -1 /* PatchFlags.HOISTED */) {
             // If a vnode has non-null el, it means it's being reused.
             // Only static vnodes can be reused, so its mounted DOM nodes should be
             // exactly the same, and we can simply do a clone here.
@@ -3839,10 +3822,10 @@ function baseCreateRenderer(options, createHydrationFns) {
             el = vnode.el = hostCreateElement(vnode.type, isSVG, props && props.is, props);
             // mount children first, since some props may rely on child content
             // being already rendered, e.g. `<select value>`
-            if (shapeFlag & 8 /* TEXT_CHILDREN */) {
+            if (shapeFlag & 8 /* ShapeFlags.TEXT_CHILDREN */) {
                 hostSetElementText(el, vnode.children);
             }
-            else if (shapeFlag & 16 /* ARRAY_CHILDREN */) {
+            else if (shapeFlag & 16 /* ShapeFlags.ARRAY_CHILDREN */) {
                 mountChildren(vnode.children, el, null, parentComponent, parentSuspense, isSVG && type !== 'foreignObject', slotScopeIds, optimized);
             }
             if (dirs) {
@@ -3926,7 +3909,7 @@ function baseCreateRenderer(options, createHydrationFns) {
         let { patchFlag, dynamicChildren, dirs } = n2;
         // #1426 take the old vnode's patch flag into account since user may clone a
         // compiler-generated vnode, which de-opts to FULL_PROPS
-        patchFlag |= n1.patchFlag & 16 /* FULL_PROPS */;
+        patchFlag |= n1.patchFlag & 16 /* PatchFlags.FULL_PROPS */;
         const oldProps = n1.props || EMPTY_OBJ;
         const newProps = n2.props || EMPTY_OBJ;
         let vnodeHook;
@@ -3952,21 +3935,21 @@ function baseCreateRenderer(options, createHydrationFns) {
             // generated by the compiler and can take the fast path.
             // in this path old node and new node are guaranteed to have the same shape
             // (i.e. at the exact same position in the source template)
-            if (patchFlag & 16 /* FULL_PROPS */) {
+            if (patchFlag & 16 /* PatchFlags.FULL_PROPS */) {
                 // element props contain dynamic keys, full diff needed
                 patchProps(el, n2, oldProps, newProps, parentComponent, parentSuspense, isSVG);
             }
             else {
                 // class
                 // this flag is matched when the element has dynamic class bindings.
-                if (patchFlag & 2 /* CLASS */) {
+                if (patchFlag & 2 /* PatchFlags.CLASS */) {
                     if (oldProps.class !== newProps.class) {
                         hostPatchProp(el, 'class', null, newProps.class, isSVG);
                     }
                 }
                 // style
                 // this flag is matched when the element has dynamic style bindings
-                if (patchFlag & 4 /* STYLE */) {
+                if (patchFlag & 4 /* PatchFlags.STYLE */) {
                     hostPatchProp(el, 'style', oldProps.style, newProps.style, isSVG);
                 }
                 // props
@@ -3975,7 +3958,7 @@ function baseCreateRenderer(options, createHydrationFns) {
                 // faster iteration.
                 // Note dynamic keys like :[foo]="bar" will cause this optimization to
                 // bail out and go through a full diff because we need to unset the old key
-                if (patchFlag & 8 /* PROPS */) {
+                if (patchFlag & 8 /* PatchFlags.PROPS */) {
                     // if the flag is present then dynamicProps must be non-null
                     const propsToUpdate = n2.dynamicProps;
                     for (let i = 0; i < propsToUpdate.length; i++) {
@@ -3991,7 +3974,7 @@ function baseCreateRenderer(options, createHydrationFns) {
             }
             // text
             // This flag is matched when the element has only dynamic text children.
-            if (patchFlag & 1 /* TEXT */) {
+            if (patchFlag & 1 /* PatchFlags.TEXT */) {
                 if (n1.children !== n2.children) {
                     hostSetElementText(el, n2.children);
                 }
@@ -4025,7 +4008,7 @@ function baseCreateRenderer(options, createHydrationFns) {
                     // which also requires the correct parent container
                     !isSameVNodeType(oldVNode, newVNode) ||
                     // - In the case of a component, it could contain anything.
-                    oldVNode.shapeFlag & (6 /* COMPONENT */ | 64 /* TELEPORT */))
+                    oldVNode.shapeFlag & (6 /* ShapeFlags.COMPONENT */ | 64 /* ShapeFlags.TELEPORT */))
                 ? hostParentNode(oldVNode.el)
                 : // In other cases, the parent container is not actually used so we
                     // just pass the block element here to avoid a DOM parentNode call.
@@ -4078,7 +4061,7 @@ function baseCreateRenderer(options, createHydrationFns) {
         }
         else {
             if (patchFlag > 0 &&
-                patchFlag & 64 /* STABLE_FRAGMENT */ &&
+                patchFlag & 64 /* PatchFlags.STABLE_FRAGMENT */ &&
                 dynamicChildren &&
                 // #2715 the previous fragment could've been a BAILed one as a result
                 // of renderSlot() with no valid children
@@ -4108,7 +4091,7 @@ function baseCreateRenderer(options, createHydrationFns) {
     const processComponent = (n1, n2, container, anchor, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized) => {
         n2.slotScopeIds = slotScopeIds;
         if (n1 == null) {
-            if (n2.shapeFlag & 512 /* COMPONENT_KEPT_ALIVE */) {
+            if (n2.shapeFlag & 512 /* ShapeFlags.COMPONENT_KEPT_ALIVE */) {
                 parentComponent.ctx.activate(n2, container, anchor, isSVG, optimized);
             }
             else {
@@ -4221,10 +4204,10 @@ function baseCreateRenderer(options, createHydrationFns) {
                 // activated hook for keep-alive roots.
                 // #1742 activated hook must be accessed after first render
                 // since the hook may be injected by a child keep-alive
-                if (initialVNode.shapeFlag & 256 /* COMPONENT_SHOULD_KEEP_ALIVE */ ||
+                if (initialVNode.shapeFlag & 256 /* ShapeFlags.COMPONENT_SHOULD_KEEP_ALIVE */ ||
                     (parent &&
                         isAsyncWrapper(parent.vnode) &&
-                        parent.vnode.shapeFlag & 256 /* COMPONENT_SHOULD_KEEP_ALIVE */)) {
+                        parent.vnode.shapeFlag & 256 /* ShapeFlags.COMPONENT_SHOULD_KEEP_ALIVE */)) {
                     instance.a && queuePostRenderEffect(instance.a, parentSuspense);
                 }
                 instance.isMounted = true;
@@ -4301,7 +4284,7 @@ function baseCreateRenderer(options, createHydrationFns) {
         pauseTracking();
         // props update may have triggered pre-flush watchers.
         // flush them before the render update.
-        flushPreFlushCbs(undefined, instance.update);
+        flushPreFlushCbs();
         resetTracking();
     };
     const patchChildren = (n1, n2, container, anchor, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized = false) => {
@@ -4311,22 +4294,22 @@ function baseCreateRenderer(options, createHydrationFns) {
         const { patchFlag, shapeFlag } = n2;
         // fast path
         if (patchFlag > 0) {
-            if (patchFlag & 128 /* KEYED_FRAGMENT */) {
+            if (patchFlag & 128 /* PatchFlags.KEYED_FRAGMENT */) {
                 // this could be either fully-keyed or mixed (some keyed some not)
                 // presence of patchFlag means children are guaranteed to be arrays
                 patchKeyedChildren(c1, c2, container, anchor, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized);
                 return;
             }
-            else if (patchFlag & 256 /* UNKEYED_FRAGMENT */) {
+            else if (patchFlag & 256 /* PatchFlags.UNKEYED_FRAGMENT */) {
                 // unkeyed
                 patchUnkeyedChildren(c1, c2, container, anchor, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized);
                 return;
             }
         }
         // children has 3 possibilities: text, array or no children.
-        if (shapeFlag & 8 /* TEXT_CHILDREN */) {
+        if (shapeFlag & 8 /* ShapeFlags.TEXT_CHILDREN */) {
             // text children fast path
-            if (prevShapeFlag & 16 /* ARRAY_CHILDREN */) {
+            if (prevShapeFlag & 16 /* ShapeFlags.ARRAY_CHILDREN */) {
                 unmountChildren(c1, parentComponent, parentSuspense);
             }
             if (c2 !== c1) {
@@ -4334,9 +4317,9 @@ function baseCreateRenderer(options, createHydrationFns) {
             }
         }
         else {
-            if (prevShapeFlag & 16 /* ARRAY_CHILDREN */) {
+            if (prevShapeFlag & 16 /* ShapeFlags.ARRAY_CHILDREN */) {
                 // prev children was array
-                if (shapeFlag & 16 /* ARRAY_CHILDREN */) {
+                if (shapeFlag & 16 /* ShapeFlags.ARRAY_CHILDREN */) {
                     // two arrays, cannot assume anything, do full diff
                     patchKeyedChildren(c1, c2, container, anchor, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized);
                 }
@@ -4348,11 +4331,11 @@ function baseCreateRenderer(options, createHydrationFns) {
             else {
                 // prev children was text OR null
                 // new children is array OR null
-                if (prevShapeFlag & 8 /* TEXT_CHILDREN */) {
+                if (prevShapeFlag & 8 /* ShapeFlags.TEXT_CHILDREN */) {
                     hostSetElementText(container, '');
                 }
                 // mount new if array
-                if (shapeFlag & 16 /* ARRAY_CHILDREN */) {
+                if (shapeFlag & 16 /* ShapeFlags.ARRAY_CHILDREN */) {
                     mountChildren(c2, container, anchor, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized);
                 }
             }
@@ -4540,7 +4523,7 @@ function baseCreateRenderer(options, createHydrationFns) {
                     // There is no stable subsequence (e.g. a reverse)
                     // OR current node is not among the stable sequence
                     if (j < 0 || i !== increasingNewIndexSequence[j]) {
-                        move(nextChild, container, anchor, 2 /* REORDER */);
+                        move(nextChild, container, anchor, 2 /* MoveType.REORDER */);
                     }
                     else {
                         j--;
@@ -4551,15 +4534,15 @@ function baseCreateRenderer(options, createHydrationFns) {
     };
     const move = (vnode, container, anchor, moveType, parentSuspense = null) => {
         const { el, type, transition, children, shapeFlag } = vnode;
-        if (shapeFlag & 6 /* COMPONENT */) {
+        if (shapeFlag & 6 /* ShapeFlags.COMPONENT */) {
             move(vnode.component.subTree, container, anchor, moveType);
             return;
         }
-        if (shapeFlag & 128 /* SUSPENSE */) {
+        if (shapeFlag & 128 /* ShapeFlags.SUSPENSE */) {
             vnode.suspense.move(container, anchor, moveType);
             return;
         }
-        if (shapeFlag & 64 /* TELEPORT */) {
+        if (shapeFlag & 64 /* ShapeFlags.TELEPORT */) {
             type.move(vnode, container, anchor, internals);
             return;
         }
@@ -4576,11 +4559,11 @@ function baseCreateRenderer(options, createHydrationFns) {
             return;
         }
         // single nodes
-        const needTransition = moveType !== 2 /* REORDER */ &&
-            shapeFlag & 1 /* ELEMENT */ &&
+        const needTransition = moveType !== 2 /* MoveType.REORDER */ &&
+            shapeFlag & 1 /* ShapeFlags.ELEMENT */ &&
             transition;
         if (needTransition) {
-            if (moveType === 0 /* ENTER */) {
+            if (moveType === 0 /* MoveType.ENTER */) {
                 transition.beforeEnter(el);
                 hostInsert(el, container, anchor);
                 queuePostRenderEffect(() => transition.enter(el), parentSuspense);
@@ -4612,42 +4595,42 @@ function baseCreateRenderer(options, createHydrationFns) {
         if (ref != null) {
             setRef(ref, null, parentSuspense, vnode, true);
         }
-        if (shapeFlag & 256 /* COMPONENT_SHOULD_KEEP_ALIVE */) {
+        if (shapeFlag & 256 /* ShapeFlags.COMPONENT_SHOULD_KEEP_ALIVE */) {
             parentComponent.ctx.deactivate(vnode);
             return;
         }
-        const shouldInvokeDirs = shapeFlag & 1 /* ELEMENT */ && dirs;
+        const shouldInvokeDirs = shapeFlag & 1 /* ShapeFlags.ELEMENT */ && dirs;
         const shouldInvokeVnodeHook = !isAsyncWrapper(vnode);
         let vnodeHook;
         if (shouldInvokeVnodeHook &&
             (vnodeHook = props && props.onVnodeBeforeUnmount)) {
             invokeVNodeHook(vnodeHook, parentComponent, vnode);
         }
-        if (shapeFlag & 6 /* COMPONENT */) {
+        if (shapeFlag & 6 /* ShapeFlags.COMPONENT */) {
             unmountComponent(vnode.component, parentSuspense, doRemove);
         }
         else {
-            if (shapeFlag & 128 /* SUSPENSE */) {
+            if (shapeFlag & 128 /* ShapeFlags.SUSPENSE */) {
                 vnode.suspense.unmount(parentSuspense, doRemove);
                 return;
             }
             if (shouldInvokeDirs) {
                 invokeDirectiveHook(vnode, null, parentComponent, 'beforeUnmount');
             }
-            if (shapeFlag & 64 /* TELEPORT */) {
+            if (shapeFlag & 64 /* ShapeFlags.TELEPORT */) {
                 vnode.type.remove(vnode, parentComponent, parentSuspense, optimized, internals, doRemove);
             }
             else if (dynamicChildren &&
                 // #1153: fast path should not be taken for non-stable (v-for) fragments
                 (type !== Fragment ||
-                    (patchFlag > 0 && patchFlag & 64 /* STABLE_FRAGMENT */))) {
+                    (patchFlag > 0 && patchFlag & 64 /* PatchFlags.STABLE_FRAGMENT */))) {
                 // fast path for block nodes: only need to unmount dynamic children.
                 unmountChildren(dynamicChildren, parentComponent, parentSuspense, false, true);
             }
             else if ((type === Fragment &&
                 patchFlag &
-                    (128 /* KEYED_FRAGMENT */ | 256 /* UNKEYED_FRAGMENT */)) ||
-                (!optimized && shapeFlag & 16 /* ARRAY_CHILDREN */)) {
+                    (128 /* PatchFlags.KEYED_FRAGMENT */ | 256 /* PatchFlags.UNKEYED_FRAGMENT */)) ||
+                (!optimized && shapeFlag & 16 /* ShapeFlags.ARRAY_CHILDREN */)) {
                 unmountChildren(children, parentComponent, parentSuspense);
             }
             if (doRemove) {
@@ -4682,7 +4665,7 @@ function baseCreateRenderer(options, createHydrationFns) {
                 transition.afterLeave();
             }
         };
-        if (vnode.shapeFlag & 1 /* ELEMENT */ &&
+        if (vnode.shapeFlag & 1 /* ShapeFlags.ELEMENT */ &&
             transition &&
             !transition.persisted) {
             const { leave, delayLeave } = transition;
@@ -4752,10 +4735,10 @@ function baseCreateRenderer(options, createHydrationFns) {
         }
     };
     const getNextHostNode = vnode => {
-        if (vnode.shapeFlag & 6 /* COMPONENT */) {
+        if (vnode.shapeFlag & 6 /* ShapeFlags.COMPONENT */) {
             return getNextHostNode(vnode.component.subTree);
         }
-        if (vnode.shapeFlag & 128 /* SUSPENSE */) {
+        if (vnode.shapeFlag & 128 /* ShapeFlags.SUSPENSE */) {
             return vnode.suspense.next();
         }
         return hostNextSibling((vnode.anchor || vnode.el));
@@ -4769,6 +4752,7 @@ function baseCreateRenderer(options, createHydrationFns) {
         else {
             patch(container._vnode || null, vnode, container, null, null, null, isSVG);
         }
+        flushPreFlushCbs();
         flushPostFlushCbs();
         container._vnode = vnode;
     };
@@ -4818,8 +4802,8 @@ function traverseStaticChildren(n1, n2, shallow = false) {
             // guaranteed to be vnodes
             const c1 = ch1[i];
             let c2 = ch2[i];
-            if (c2.shapeFlag & 1 /* ELEMENT */ && !c2.dynamicChildren) {
-                if (c2.patchFlag <= 0 || c2.patchFlag === 32 /* HYDRATE_EVENTS */) {
+            if (c2.shapeFlag & 1 /* ShapeFlags.ELEMENT */ && !c2.dynamicChildren) {
+                if (c2.patchFlag <= 0 || c2.patchFlag === 32 /* PatchFlags.HYDRATE_EVENTS */) {
                     c2 = ch2[i] = cloneIfMounted(ch2[i]);
                     c2.el = c1.el;
                 }
@@ -4961,7 +4945,7 @@ function createElementBlock(type, props, children, patchFlag, dynamicProps, shap
 function createBlock(type, props, children, patchFlag, dynamicProps) {
     return setupBlock(createVNode(type, props, children, patchFlag, dynamicProps, true /* isBlock: prevent a block from tracking itself */));
 }
-function isVNode(value) {
+function isVNode$1(value) {
     return value ? value.__v_isVNode === true : false;
 }
 function isSameVNodeType(n1, n2) {
@@ -4976,7 +4960,7 @@ const normalizeRef = ({ ref, ref_key, ref_for }) => {
             : ref
         : null);
 };
-function createBaseVNode(type, props = null, children = null, patchFlag = 0, dynamicProps = null, shapeFlag = type === Fragment ? 0 : 1 /* ELEMENT */, isBlockNode = false, needFullChildrenNormalization = false) {
+function createBaseVNode(type, props = null, children = null, patchFlag = 0, dynamicProps = null, shapeFlag = type === Fragment ? 0 : 1 /* ShapeFlags.ELEMENT */, isBlockNode = false, needFullChildrenNormalization = false) {
     const vnode = {
         __v_isVNode: true,
         __v_skip: true,
@@ -5007,7 +4991,7 @@ function createBaseVNode(type, props = null, children = null, patchFlag = 0, dyn
     if (needFullChildrenNormalization) {
         normalizeChildren(vnode, children);
         // normalize suspense children
-        if (shapeFlag & 128 /* SUSPENSE */) {
+        if (shapeFlag & 128 /* ShapeFlags.SUSPENSE */) {
             type.normalize(vnode);
         }
     }
@@ -5015,8 +4999,8 @@ function createBaseVNode(type, props = null, children = null, patchFlag = 0, dyn
         // compiled element vnode - if children is passed, only possible types are
         // string or Array.
         vnode.shapeFlag |= isString$1(children)
-            ? 8 /* TEXT_CHILDREN */
-            : 16 /* ARRAY_CHILDREN */;
+            ? 8 /* ShapeFlags.TEXT_CHILDREN */
+            : 16 /* ShapeFlags.ARRAY_CHILDREN */;
     }
     // track vnode for block tree
     if (isBlockTreeEnabled > 0 &&
@@ -5028,10 +5012,10 @@ function createBaseVNode(type, props = null, children = null, patchFlag = 0, dyn
         // component nodes also should always be patched, because even if the
         // component doesn't need to update, it needs to persist the instance on to
         // the next vnode so that it can be properly unmounted later.
-        (vnode.patchFlag > 0 || shapeFlag & 6 /* COMPONENT */) &&
+        (vnode.patchFlag > 0 || shapeFlag & 6 /* ShapeFlags.COMPONENT */) &&
         // the EVENTS flag is only for hydration and if it is the only flag, the
         // vnode should not be considered dynamic due to handler caching.
-        vnode.patchFlag !== 32 /* HYDRATE_EVENTS */) {
+        vnode.patchFlag !== 32 /* PatchFlags.HYDRATE_EVENTS */) {
         currentBlock.push(vnode);
     }
     return vnode;
@@ -5041,7 +5025,7 @@ function _createVNode(type, props = null, children = null, patchFlag = 0, dynami
     if (!type || type === NULL_DYNAMIC_COMPONENT) {
         type = Comment;
     }
-    if (isVNode(type)) {
+    if (isVNode$1(type)) {
         // createVNode receiving an existing vnode. This happens in cases like
         // <component :is="vnode"/>
         // #2078 make sure to merge refs during the clone instead of overwriting it
@@ -5050,14 +5034,14 @@ function _createVNode(type, props = null, children = null, patchFlag = 0, dynami
             normalizeChildren(cloned, children);
         }
         if (isBlockTreeEnabled > 0 && !isBlockNode && currentBlock) {
-            if (cloned.shapeFlag & 6 /* COMPONENT */) {
+            if (cloned.shapeFlag & 6 /* ShapeFlags.COMPONENT */) {
                 currentBlock[currentBlock.indexOf(type)] = cloned;
             }
             else {
                 currentBlock.push(cloned);
             }
         }
-        cloned.patchFlag |= -2 /* BAIL */;
+        cloned.patchFlag |= -2 /* PatchFlags.BAIL */;
         return cloned;
     }
     // class component normalization.
@@ -5072,7 +5056,7 @@ function _createVNode(type, props = null, children = null, patchFlag = 0, dynami
         if (klass && !isString$1(klass)) {
             props.class = normalizeClass(klass);
         }
-        if (isObject$2(style)) {
+        if (isObject$1(style)) {
             // reactive state objects need to be cloned since they are likely to be
             // mutated
             if (isProxy(style) && !isArray$1(style)) {
@@ -5083,15 +5067,15 @@ function _createVNode(type, props = null, children = null, patchFlag = 0, dynami
     }
     // encode the vnode type information into a bitmap
     const shapeFlag = isString$1(type)
-        ? 1 /* ELEMENT */
+        ? 1 /* ShapeFlags.ELEMENT */
         : isSuspense(type)
-            ? 128 /* SUSPENSE */
+            ? 128 /* ShapeFlags.SUSPENSE */
             : isTeleport(type)
-                ? 64 /* TELEPORT */
-                : isObject$2(type)
-                    ? 4 /* STATEFUL_COMPONENT */
+                ? 64 /* ShapeFlags.TELEPORT */
+                : isObject$1(type)
+                    ? 4 /* ShapeFlags.STATEFUL_COMPONENT */
                     : isFunction$1(type)
-                        ? 2 /* FUNCTIONAL_COMPONENT */
+                        ? 2 /* ShapeFlags.FUNCTIONAL_COMPONENT */
                         : 0;
     return createBaseVNode(type, props, children, patchFlag, dynamicProps, shapeFlag, isBlockNode, true);
 }
@@ -5136,8 +5120,8 @@ function cloneVNode(vnode, extraProps, mergeRef = false) {
         // fast paths only.
         patchFlag: extraProps && vnode.type !== Fragment
             ? patchFlag === -1 // hoisted node
-                ? 16 /* FULL_PROPS */
-                : patchFlag | 16 /* FULL_PROPS */
+                ? 16 /* PatchFlags.FULL_PROPS */
+                : patchFlag | 16 /* PatchFlags.FULL_PROPS */
             : patchFlag,
         dynamicProps: vnode.dynamicProps,
         dynamicChildren: vnode.dynamicChildren,
@@ -5206,10 +5190,10 @@ function normalizeChildren(vnode, children) {
         children = null;
     }
     else if (isArray$1(children)) {
-        type = 16 /* ARRAY_CHILDREN */;
+        type = 16 /* ShapeFlags.ARRAY_CHILDREN */;
     }
     else if (typeof children === 'object') {
-        if (shapeFlag & (1 /* ELEMENT */ | 64 /* TELEPORT */)) {
+        if (shapeFlag & (1 /* ShapeFlags.ELEMENT */ | 64 /* ShapeFlags.TELEPORT */)) {
             // Normalize slot to plain children for plain element and Teleport
             const slot = children.default;
             if (slot) {
@@ -5221,37 +5205,37 @@ function normalizeChildren(vnode, children) {
             return;
         }
         else {
-            type = 32 /* SLOTS_CHILDREN */;
+            type = 32 /* ShapeFlags.SLOTS_CHILDREN */;
             const slotFlag = children._;
             if (!slotFlag && !(InternalObjectKey in children)) {
                 children._ctx = currentRenderingInstance;
             }
-            else if (slotFlag === 3 /* FORWARDED */ && currentRenderingInstance) {
+            else if (slotFlag === 3 /* SlotFlags.FORWARDED */ && currentRenderingInstance) {
                 // a child component receives forwarded slots from the parent.
                 // its slot type is determined by its parent's slot type.
-                if (currentRenderingInstance.slots._ === 1 /* STABLE */) {
-                    children._ = 1 /* STABLE */;
+                if (currentRenderingInstance.slots._ === 1 /* SlotFlags.STABLE */) {
+                    children._ = 1 /* SlotFlags.STABLE */;
                 }
                 else {
-                    children._ = 2 /* DYNAMIC */;
-                    vnode.patchFlag |= 1024 /* DYNAMIC_SLOTS */;
+                    children._ = 2 /* SlotFlags.DYNAMIC */;
+                    vnode.patchFlag |= 1024 /* PatchFlags.DYNAMIC_SLOTS */;
                 }
             }
         }
     }
     else if (isFunction$1(children)) {
         children = { default: children, _ctx: currentRenderingInstance };
-        type = 32 /* SLOTS_CHILDREN */;
+        type = 32 /* ShapeFlags.SLOTS_CHILDREN */;
     }
     else {
         children = String(children);
         // force teleport children to array so it can be moved around
-        if (shapeFlag & 64 /* TELEPORT */) {
-            type = 16 /* ARRAY_CHILDREN */;
+        if (shapeFlag & 64 /* ShapeFlags.TELEPORT */) {
+            type = 16 /* ShapeFlags.ARRAY_CHILDREN */;
             children = [createTextVNode(children)];
         }
         else {
-            type = 8 /* TEXT_CHILDREN */;
+            type = 8 /* ShapeFlags.TEXT_CHILDREN */;
         }
     }
     vnode.children = children;
@@ -5289,7 +5273,7 @@ function mergeProps(...args) {
     return ret;
 }
 function invokeVNodeHook(hook, instance, vnode, prevVNode = null) {
-    callWithAsyncErrorHandling(hook, instance, 7 /* VNODE_HOOK */, [
+    callWithAsyncErrorHandling(hook, instance, 7 /* ErrorCodes.VNODE_HOOK */, [
         vnode,
         prevVNode
     ]);
@@ -5390,7 +5374,7 @@ const unsetCurrentInstance = () => {
     currentInstance = null;
 };
 function isStatefulComponent(instance) {
-    return instance.vnode.shapeFlag & 4 /* STATEFUL_COMPONENT */;
+    return instance.vnode.shapeFlag & 4 /* ShapeFlags.STATEFUL_COMPONENT */;
 }
 let isInSSRComponentSetup = false;
 function setupComponent(instance, isSSR = false) {
@@ -5419,7 +5403,7 @@ function setupStatefulComponent(instance, isSSR) {
             setup.length > 1 ? createSetupContext(instance) : null);
         setCurrentInstance(instance);
         pauseTracking();
-        const setupResult = callWithErrorHandling(setup, instance, 0 /* SETUP_FUNCTION */, [instance.props, setupContext]);
+        const setupResult = callWithErrorHandling(setup, instance, 0 /* ErrorCodes.SETUP_FUNCTION */, [instance.props, setupContext]);
         resetTracking();
         unsetCurrentInstance();
         if (isPromise(setupResult)) {
@@ -5431,7 +5415,7 @@ function setupStatefulComponent(instance, isSSR) {
                     handleSetupResult(instance, resolvedResult, isSSR);
                 })
                     .catch(e => {
-                    handleError(e, instance, 0 /* SETUP_FUNCTION */);
+                    handleError(e, instance, 0 /* ErrorCodes.SETUP_FUNCTION */);
                 });
             }
             else {
@@ -5460,7 +5444,7 @@ function handleSetupResult(instance, setupResult, isSSR) {
             instance.render = setupResult;
         }
     }
-    else if (isObject$2(setupResult)) {
+    else if (isObject$1(setupResult)) {
         instance.setupState = proxyRefs(setupResult);
     }
     else ;
@@ -5475,7 +5459,8 @@ function finishComponentSetup(instance, isSSR, skipOptions) {
         // only do on-the-fly compile if not in SSR - SSR on-the-fly compilation
         // is done by server-renderer
         if (!isSSR && compile && !Component.render) {
-            const template = Component.template;
+            const template = Component.template ||
+                resolveMergedOptions(instance).template;
             if (template) {
                 const { isCustomElement, compilerOptions } = instance.appContext.config;
                 const { delimiters, compilerOptions: componentCompilerOptions } = Component;
@@ -5500,7 +5485,7 @@ function finishComponentSetup(instance, isSSR, skipOptions) {
 function createAttrsProxy(instance) {
     return new Proxy(instance.attrs, {
             get(target, key) {
-                track(instance, "get" /* GET */, '$attrs');
+                track(instance, "get" /* TrackOpTypes.GET */, '$attrs');
                 return target[key];
             }
         });
@@ -5549,9 +5534,9 @@ const computed = ((getterOrOptions, debugOptions) => {
 function h(type, propsOrChildren, children) {
     const l = arguments.length;
     if (l === 2) {
-        if (isObject$2(propsOrChildren) && !isArray$1(propsOrChildren)) {
+        if (isObject$1(propsOrChildren) && !isArray$1(propsOrChildren)) {
             // single vnode without props
-            if (isVNode(propsOrChildren)) {
+            if (isVNode$1(propsOrChildren)) {
                 return createVNode(type, null, [propsOrChildren]);
             }
             // props without children
@@ -5566,7 +5551,7 @@ function h(type, propsOrChildren, children) {
         if (l > 3) {
             children = Array.prototype.slice.call(arguments, 2);
         }
-        else if (l === 3 && isVNode(children)) {
+        else if (l === 3 && isVNode$1(children)) {
             children = [children];
         }
         return createVNode(type, propsOrChildren, children);
@@ -5574,7 +5559,7 @@ function h(type, propsOrChildren, children) {
 }
 
 // Core API ------------------------------------------------------------------
-const version = "3.2.36";
+const version = "3.2.39";
 
 const svgNS = 'http://www.w3.org/2000/svg';
 const doc = (typeof document !== 'undefined' ? document : null);
@@ -5758,7 +5743,7 @@ function autoPrefix(style, rawName) {
     if (name !== 'filter' && name in style) {
         return (prefixCache[rawName] = name);
     }
-    name = capitalize(name);
+    name = capitalize$1(name);
     for (let i = 0; i < prefixes.length; i++) {
         const prefixed = prefixes[i] + name;
         if (prefixed in style) {
@@ -5924,7 +5909,8 @@ function parseName(name) {
             options[m[0].toLowerCase()] = true;
         }
     }
-    return [hyphenate(name.slice(2)), options];
+    const event = name[2] === ':' ? name.slice(3) : hyphenate(name.slice(2));
+    return [event, options];
 }
 function createInvoker(initialValue, instance) {
     const invoker = (e) => {
@@ -5936,7 +5922,7 @@ function createInvoker(initialValue, instance) {
         // AFTER it was attached.
         const timeStamp = e.timeStamp || _getNow();
         if (skipTimestampCheck || timeStamp >= invoker.attached - 1) {
-            callWithAsyncErrorHandling(patchStopImmediatePropagation(e, invoker.value), instance, 5 /* NATIVE_EVENT_HANDLER */, [e]);
+            callWithAsyncErrorHandling(patchStopImmediatePropagation(e, invoker.value), instance, 5 /* ErrorCodes.NATIVE_EVENT_HANDLER */, [e]);
         }
     };
     invoker.value = initialValue;
@@ -6096,10 +6082,15 @@ function normalizeContainer(container) {
 }
 
 /*!
-  * @intlify/shared v9.1.10
+  * shared v9.2.2
   * (c) 2022 kazuya kawaguchi
   * Released under the MIT License.
   */
+/**
+ * Original Utilities
+ * written by kazuya kawaguchi
+ */
+const inBrowser = typeof window !== 'undefined';
 const hasSymbol = typeof Symbol === 'function' && typeof Symbol.toStringTag === 'symbol';
 const makeSymbol = (name) => hasSymbol ? Symbol(name) : name;
 const generateFormatCacheKey = (locale, key, source) => friendlyJSONstringify({ l: locale, k: key, s: source });
@@ -6143,9 +6134,9 @@ function escapeHtml(rawText) {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&apos;');
 }
-const hasOwnProperty$1 = Object.prototype.hasOwnProperty;
-function hasOwn$1(obj, key) {
-    return hasOwnProperty$1.call(obj, key);
+const hasOwnProperty = Object.prototype.hasOwnProperty;
+function hasOwn(obj, key) {
+    return hasOwnProperty.call(obj, key);
 }
 /* eslint-enable */
 /**
@@ -6159,7 +6150,7 @@ const isArray = Array.isArray;
 const isFunction = (val) => typeof val === 'function';
 const isString = (val) => typeof val === 'string';
 const isBoolean = (val) => typeof val === 'boolean';
-const isObject$1 = (val) => // eslint-disable-line
+const isObject = (val) => // eslint-disable-line
  val !== null && typeof val === 'object';
 const objectToString = Object.prototype.toString;
 const toTypeString = (value) => objectToString.call(value);
@@ -6174,18 +6165,62 @@ const toDisplayString = (val) => {
 };
 
 /*!
-  * @intlify/message-resolver v9.1.10
+  * message-compiler v9.2.2
   * (c) 2022 kazuya kawaguchi
   * Released under the MIT License.
   */
-const hasOwnProperty = Object.prototype.hasOwnProperty;
-function hasOwn(obj, key) {
-    return hasOwnProperty.call(obj, key);
-}
-const isObject = (val) => // eslint-disable-line
- val !== null && typeof val === 'object';
 
-const pathStateMachine = [];
+const CompileErrorCodes = {
+    // tokenizer error codes
+    EXPECTED_TOKEN: 1,
+    INVALID_TOKEN_IN_PLACEHOLDER: 2,
+    UNTERMINATED_SINGLE_QUOTE_IN_PLACEHOLDER: 3,
+    UNKNOWN_ESCAPE_SEQUENCE: 4,
+    INVALID_UNICODE_ESCAPE_SEQUENCE: 5,
+    UNBALANCED_CLOSING_BRACE: 6,
+    UNTERMINATED_CLOSING_BRACE: 7,
+    EMPTY_PLACEHOLDER: 8,
+    NOT_ALLOW_NEST_PLACEHOLDER: 9,
+    INVALID_LINKED_FORMAT: 10,
+    // parser error codes
+    MUST_HAVE_MESSAGES_IN_PLURAL: 11,
+    UNEXPECTED_EMPTY_LINKED_MODIFIER: 12,
+    UNEXPECTED_EMPTY_LINKED_KEY: 13,
+    UNEXPECTED_LEXICAL_ANALYSIS: 14,
+    // Special value for higher-order compilers to pick up the last code
+    // to avoid collision of error codes. This should always be kept as the last
+    // item.
+    __EXTEND_POINT__: 15
+};
+function createCompileError(code, loc, options = {}) {
+    const { domain, messages, args } = options;
+    const msg = code;
+    const error = new SyntaxError(String(msg));
+    error.code = code;
+    if (loc) {
+        error.location = loc;
+    }
+    error.domain = domain;
+    return error;
+}
+
+/*!
+  * devtools-if v9.2.2
+  * (c) 2022 kazuya kawaguchi
+  * Released under the MIT License.
+  */
+const IntlifyDevToolsHooks =  {
+    I18nInit: 'i18n:init',
+    FunctionTranslate: 'function:translate'
+};
+
+/*!
+  * core-base v9.2.2
+  * (c) 2022 kazuya kawaguchi
+  * Released under the MIT License.
+  */
+
+const pathStateMachine =  [];
 pathStateMachine[0 /* BEFORE_PATH */] = {
     ["w" /* WORKSPACE */]: [0 /* BEFORE_PATH */],
     ["i" /* IDENT */]: [3 /* IN_IDENT */, 0 /* APPEND */],
@@ -6389,6 +6424,35 @@ function parse(path) {
 }
 // path token cache
 const cache = new Map();
+/**
+ * key-value message resolver
+ *
+ * @remarks
+ * Resolves messages with the key-value structure. Note that messages with a hierarchical structure such as objects cannot be resolved
+ *
+ * @param obj - A target object to be resolved with path
+ * @param path - A {@link Path | path} to resolve the value of message
+ *
+ * @returns A resolved {@link PathValue | path value}
+ *
+ * @VueI18nGeneral
+ */
+function resolveWithKeyValue(obj, path) {
+    return isObject(obj) ? obj[path] : null;
+}
+/**
+ * message resolver
+ *
+ * @remarks
+ * Resolves messages. messages with a hierarchical structure such as objects can be resolved. This resolver is used in VueI18n as default.
+ *
+ * @param obj - A target object to be resolved with path
+ * @param path - A {@link Path | path} to resolve the value of message
+ *
+ * @returns A resolved {@link PathValue | path value}
+ *
+ * @VueI18nGeneral
+ */
 function resolveValue(obj, path) {
     // check object
     if (!isObject(obj)) {
@@ -6420,55 +6484,6 @@ function resolveValue(obj, path) {
     }
     return last;
 }
-/**
- * Transform flat json in obj to normal json in obj
- */
-function handleFlatJson(obj) {
-    // check obj
-    if (!isObject(obj)) {
-        return obj;
-    }
-    for (const key in obj) {
-        // check key
-        if (!hasOwn(obj, key)) {
-            continue;
-        }
-        // handle for normal json
-        if (!key.includes("." /* DOT */)) {
-            // recursive process value if value is also a object
-            if (isObject(obj[key])) {
-                handleFlatJson(obj[key]);
-            }
-        }
-        // handle for flat json, transform to normal json
-        else {
-            // go to the last object
-            const subKeys = key.split("." /* DOT */);
-            const lastIndex = subKeys.length - 1;
-            let currentObj = obj;
-            for (let i = 0; i < lastIndex; i++) {
-                if (!(subKeys[i] in currentObj)) {
-                    currentObj[subKeys[i]] = {};
-                }
-                currentObj = currentObj[subKeys[i]];
-            }
-            // update last object value, delete old property
-            currentObj[subKeys[lastIndex]] = obj[key];
-            delete obj[key];
-            // recursive process value if value is also a object
-            if (isObject(currentObj[subKeys[lastIndex]])) {
-                handleFlatJson(currentObj[subKeys[lastIndex]]);
-            }
-        }
-    }
-    return obj;
-}
-
-/*!
-  * @intlify/runtime v9.1.10
-  * (c) 2022 kazuya kawaguchi
-  * Released under the MIT License.
-  */
 
 const DEFAULT_MODIFIER = (str) => str;
 const DEFAULT_MESSAGE = (ctx) => ''; // eslint-disable-line
@@ -6512,29 +6527,30 @@ function normalizeNamed(pluralIndex, props) {
 function createMessageContext(options = {}) {
     const locale = options.locale;
     const pluralIndex = getPluralIndex(options);
-    const pluralRule = isObject$1(options.pluralRules) &&
+    const pluralRule = isObject(options.pluralRules) &&
         isString(locale) &&
         isFunction(options.pluralRules[locale])
         ? options.pluralRules[locale]
         : pluralDefault;
-    const orgPluralRule = isObject$1(options.pluralRules) &&
+    const orgPluralRule = isObject(options.pluralRules) &&
         isString(locale) &&
         isFunction(options.pluralRules[locale])
         ? pluralDefault
         : undefined;
-    const plural = (messages) => messages[pluralRule(pluralIndex, messages.length, orgPluralRule)];
+    const plural = (messages) => {
+        return messages[pluralRule(pluralIndex, messages.length, orgPluralRule)];
+    };
     const _list = options.list || [];
     const list = (index) => _list[index];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const _named = options.named || {};
     isNumber(options.pluralIndex) && normalizeNamed(pluralIndex, _named);
     const named = (key) => _named[key];
-    // TODO: need to design resolve message function?
     function message(key) {
         // prettier-ignore
         const msg = isFunction(options.messages)
             ? options.messages(key)
-            : isObject$1(options.messages)
+            : isObject(options.messages)
                 ? options.messages[key]
                 : false;
         return !msg
@@ -6556,15 +6572,39 @@ function createMessageContext(options = {}) {
     const type = isPlainObject(options.processor) && isString(options.processor.type)
         ? options.processor.type
         : DEFAULT_MESSAGE_DATA_TYPE;
+    const linked = (key, ...args) => {
+        const [arg1, arg2] = args;
+        let type = 'text';
+        let modifier = '';
+        if (args.length === 1) {
+            if (isObject(arg1)) {
+                modifier = arg1.modifier || modifier;
+                type = arg1.type || type;
+            }
+            else if (isString(arg1)) {
+                modifier = arg1 || modifier;
+            }
+        }
+        else if (args.length === 2) {
+            if (isString(arg1)) {
+                modifier = arg1 || modifier;
+            }
+            if (isString(arg2)) {
+                type = arg2 || type;
+            }
+        }
+        let msg = message(key)(ctx);
+        // The message in vnode resolved with linked are returned as an array by processor.nomalize
+        if (type === 'vnode' && isArray(msg) && modifier) {
+            msg = msg[0];
+        }
+        return modifier ? _modifier(modifier)(msg, type) : msg;
+    };
     const ctx = {
         ["list" /* LIST */]: list,
         ["named" /* NAMED */]: named,
         ["plural" /* PLURAL */]: plural,
-        ["linked" /* LINKED */]: (key, modifier) => {
-            // TODO: should check `key`
-            const msg = message(key)(ctx);
-            return isString(modifier) ? _modifier(modifier)(msg) : msg;
-        },
+        ["linked" /* LINKED */]: linked,
         ["message" /* MESSAGE */]: message,
         ["type" /* TYPE */]: type,
         ["interpolate" /* INTERPOLATE */]: interpolate,
@@ -6572,39 +6612,6 @@ function createMessageContext(options = {}) {
     };
     return ctx;
 }
-
-/*!
-  * @intlify/message-compiler v9.1.10
-  * (c) 2022 kazuya kawaguchi
-  * Released under the MIT License.
-  */
-function createCompileError(code, loc, options = {}) {
-    const { domain, messages, args } = options;
-    const msg = code;
-    const error = new SyntaxError(String(msg));
-    error.code = code;
-    if (loc) {
-        error.location = loc;
-    }
-    error.domain = domain;
-    return error;
-}
-
-/*!
-  * @intlify/devtools-if v9.1.10
-  * (c) 2022 kazuya kawaguchi
-  * Released under the MIT License.
-  */
-const IntlifyDevToolsHooks = {
-    I18nInit: 'i18n:init',
-    FunctionTranslate: 'function:translate'
-};
-
-/*!
-  * @intlify/core-base v9.1.10
-  * (c) 2022 kazuya kawaguchi
-  * Released under the MIT License.
-  */
 
 let devtools = null;
 function setDevToolsHook(hook) {
@@ -6625,133 +6632,69 @@ function createDevToolsHook(hook) {
     return (payloads) => devtools && devtools.emit(hook, payloads);
 }
 
-/**
- * Intlify core-base version
- * @internal
- */
-const VERSION$1 = '9.1.10';
-const NOT_REOSLVED = -1;
-const MISSING_RESOLVE_VALUE = '';
-function getDefaultLinkedModifiers() {
-    return {
-        upper: (val) => (isString(val) ? val.toUpperCase() : val),
-        lower: (val) => (isString(val) ? val.toLowerCase() : val),
-        // prettier-ignore
-        capitalize: (val) => (isString(val)
-            ? `${val.charAt(0).toLocaleUpperCase()}${val.substr(1)}`
-            : val)
-    };
-}
-let _compiler;
-// Additional Meta for Intlify DevTools
-let _additionalMeta = null;
-const setAdditionalMeta =  (meta) => {
-    _additionalMeta = meta;
+const CoreWarnCodes = {
+    NOT_FOUND_KEY: 1,
+    FALLBACK_TO_TRANSLATE: 2,
+    CANNOT_FORMAT_NUMBER: 3,
+    FALLBACK_TO_NUMBER_FORMAT: 4,
+    CANNOT_FORMAT_DATE: 5,
+    FALLBACK_TO_DATE_FORMAT: 6,
+    __EXTEND_POINT__: 7
 };
-const getAdditionalMeta =  () => _additionalMeta;
-// ID for CoreContext
-let _cid = 0;
-function createCoreContext(options = {}) {
-    // setup options
-    const version = isString(options.version) ? options.version : VERSION$1;
-    const locale = isString(options.locale) ? options.locale : 'en-US';
-    const fallbackLocale = isArray(options.fallbackLocale) ||
-        isPlainObject(options.fallbackLocale) ||
-        isString(options.fallbackLocale) ||
-        options.fallbackLocale === false
-        ? options.fallbackLocale
-        : locale;
-    const messages = isPlainObject(options.messages)
-        ? options.messages
-        : { [locale]: {} };
-    const datetimeFormats = isPlainObject(options.datetimeFormats)
-        ? options.datetimeFormats
-        : { [locale]: {} };
-    const numberFormats = isPlainObject(options.numberFormats)
-        ? options.numberFormats
-        : { [locale]: {} };
-    const modifiers = assign({}, options.modifiers || {}, getDefaultLinkedModifiers());
-    const pluralRules = options.pluralRules || {};
-    const missing = isFunction(options.missing) ? options.missing : null;
-    const missingWarn = isBoolean(options.missingWarn) || isRegExp(options.missingWarn)
-        ? options.missingWarn
-        : true;
-    const fallbackWarn = isBoolean(options.fallbackWarn) || isRegExp(options.fallbackWarn)
-        ? options.fallbackWarn
-        : true;
-    const fallbackFormat = !!options.fallbackFormat;
-    const unresolving = !!options.unresolving;
-    const postTranslation = isFunction(options.postTranslation)
-        ? options.postTranslation
-        : null;
-    const processor = isPlainObject(options.processor) ? options.processor : null;
-    const warnHtmlMessage = isBoolean(options.warnHtmlMessage)
-        ? options.warnHtmlMessage
-        : true;
-    const escapeParameter = !!options.escapeParameter;
-    const messageCompiler = isFunction(options.messageCompiler)
-        ? options.messageCompiler
-        : _compiler;
-    const onWarn = isFunction(options.onWarn) ? options.onWarn : warn;
-    // setup internal options
-    const internalOptions = options;
-    const __datetimeFormatters = isObject$1(internalOptions.__datetimeFormatters)
-        ? internalOptions.__datetimeFormatters
-        : new Map();
-    const __numberFormatters = isObject$1(internalOptions.__numberFormatters)
-        ? internalOptions.__numberFormatters
-        : new Map();
-    const __meta = isObject$1(internalOptions.__meta) ? internalOptions.__meta : {};
-    _cid++;
-    const context = {
-        version,
-        cid: _cid,
-        locale,
-        fallbackLocale,
-        messages,
-        datetimeFormats,
-        numberFormats,
-        modifiers,
-        pluralRules,
-        missing,
-        missingWarn,
-        fallbackWarn,
-        fallbackFormat,
-        unresolving,
-        postTranslation,
-        processor,
-        warnHtmlMessage,
-        escapeParameter,
-        messageCompiler,
-        onWarn,
-        __datetimeFormatters,
-        __numberFormatters,
-        __meta
-    };
-    // NOTE: experimental !!
-    if (__INTLIFY_PROD_DEVTOOLS__) {
-        initI18nDevTools(context, version, __meta);
-    }
-    return context;
+
+/**
+ * Fallback with simple implemenation
+ *
+ * @remarks
+ * A fallback locale function implemented with a simple fallback algorithm.
+ *
+ * Basically, it returns the value as specified in the `fallbackLocale` props, and is processed with the fallback inside intlify.
+ *
+ * @param ctx - A {@link CoreContext | context}
+ * @param fallback - A {@link FallbackLocale | fallback locale}
+ * @param start - A starting {@link Locale | locale}
+ *
+ * @returns Fallback locales
+ *
+ * @VueI18nGeneral
+ */
+function fallbackWithSimple(ctx, fallback, start // eslint-disable-line @typescript-eslint/no-unused-vars
+) {
+    // prettier-ignore
+    return [...new Set([
+            start,
+            ...(isArray(fallback)
+                ? fallback
+                : isObject(fallback)
+                    ? Object.keys(fallback)
+                    : isString(fallback)
+                        ? [fallback]
+                        : [start])
+        ])];
 }
-/** @internal */
-function handleMissing(context, key, locale, missingWarn, type) {
-    const { missing, onWarn } = context;
-    if (missing !== null) {
-        const ret = missing(context, locale, key, type);
-        return isString(ret) ? ret : key;
-    }
-    else {
-        return key;
-    }
-}
-/** @internal */
-function getLocaleChain(ctx, fallback, start) {
+/**
+ * Fallback with locale chain
+ *
+ * @remarks
+ * A fallback locale function implemented with a fallback chain algorithm. It's used in VueI18n as default.
+ *
+ * @param ctx - A {@link CoreContext | context}
+ * @param fallback - A {@link FallbackLocale | fallback locale}
+ * @param start - A starting {@link Locale | locale}
+ *
+ * @returns Fallback locales
+ *
+ * @VueI18nSee [Fallbacking](../guide/essentials/fallback)
+ *
+ * @VueI18nGeneral
+ */
+function fallbackWithLocaleChain(ctx, fallback, start) {
+    const startLocale = isString(start) ? start : DEFAULT_LOCALE;
     const context = ctx;
     if (!context.__localeChainCache) {
         context.__localeChainCache = new Map();
     }
-    let chain = context.__localeChainCache.get(start);
+    let chain = context.__localeChainCache.get(startLocale);
     if (!chain) {
         chain = [];
         // first block defined by start
@@ -6762,19 +6705,17 @@ function getLocaleChain(ctx, fallback, start) {
         }
         // prettier-ignore
         // last block defined by default
-        const defaults = isArray(fallback)
+        const defaults = isArray(fallback) || !isPlainObject(fallback)
             ? fallback
-            : isPlainObject(fallback)
+            : fallback['default']
                 ? fallback['default']
-                    ? fallback['default']
-                    : null
-                : fallback;
+                : null;
         // convert defaults to array
         block = isString(defaults) ? [defaults] : defaults;
         if (isArray(block)) {
             appendBlockToChain(chain, block, false);
         }
-        context.__localeChainCache.set(start, chain);
+        context.__localeChainCache.set(startLocale, chain);
     }
     return chain;
 }
@@ -6816,13 +6757,208 @@ function appendItemToChain(chain, target, blocks) {
     }
     return follow;
 }
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/**
+ * Intlify core-base version
+ * @internal
+ */
+const VERSION$1 = '9.2.2';
+const NOT_REOSLVED = -1;
+const DEFAULT_LOCALE = 'en-US';
+const MISSING_RESOLVE_VALUE = '';
+const capitalize = (str) => `${str.charAt(0).toLocaleUpperCase()}${str.substr(1)}`;
+function getDefaultLinkedModifiers() {
+    return {
+        upper: (val, type) => {
+            // prettier-ignore
+            return type === 'text' && isString(val)
+                ? val.toUpperCase()
+                : type === 'vnode' && isObject(val) && '__v_isVNode' in val
+                    ? val.children.toUpperCase()
+                    : val;
+        },
+        lower: (val, type) => {
+            // prettier-ignore
+            return type === 'text' && isString(val)
+                ? val.toLowerCase()
+                : type === 'vnode' && isObject(val) && '__v_isVNode' in val
+                    ? val.children.toLowerCase()
+                    : val;
+        },
+        capitalize: (val, type) => {
+            // prettier-ignore
+            return (type === 'text' && isString(val)
+                ? capitalize(val)
+                : type === 'vnode' && isObject(val) && '__v_isVNode' in val
+                    ? capitalize(val.children)
+                    : val);
+        }
+    };
+}
+let _compiler;
+let _resolver;
+/**
+ * Register the message resolver
+ *
+ * @param resolver - A {@link MessageResolver} function
+ *
+ * @VueI18nGeneral
+ */
+function registerMessageResolver(resolver) {
+    _resolver = resolver;
+}
+let _fallbacker;
+/**
+ * Register the locale fallbacker
+ *
+ * @param fallbacker - A {@link LocaleFallbacker} function
+ *
+ * @VueI18nGeneral
+ */
+function registerLocaleFallbacker(fallbacker) {
+    _fallbacker = fallbacker;
+}
+// Additional Meta for Intlify DevTools
+let _additionalMeta = null;
+const setAdditionalMeta =  (meta) => {
+    _additionalMeta = meta;
+};
+const getAdditionalMeta =  () => _additionalMeta;
+let _fallbackContext = null;
+const setFallbackContext = (context) => {
+    _fallbackContext = context;
+};
+const getFallbackContext = () => _fallbackContext;
+// ID for CoreContext
+let _cid = 0;
+function createCoreContext(options = {}) {
+    // setup options
+    const version = isString(options.version) ? options.version : VERSION$1;
+    const locale = isString(options.locale) ? options.locale : DEFAULT_LOCALE;
+    const fallbackLocale = isArray(options.fallbackLocale) ||
+        isPlainObject(options.fallbackLocale) ||
+        isString(options.fallbackLocale) ||
+        options.fallbackLocale === false
+        ? options.fallbackLocale
+        : locale;
+    const messages = isPlainObject(options.messages)
+        ? options.messages
+        : { [locale]: {} };
+    const datetimeFormats = isPlainObject(options.datetimeFormats)
+            ? options.datetimeFormats
+            : { [locale]: {} }
+        ;
+    const numberFormats = isPlainObject(options.numberFormats)
+            ? options.numberFormats
+            : { [locale]: {} }
+        ;
+    const modifiers = assign({}, options.modifiers || {}, getDefaultLinkedModifiers());
+    const pluralRules = options.pluralRules || {};
+    const missing = isFunction(options.missing) ? options.missing : null;
+    const missingWarn = isBoolean(options.missingWarn) || isRegExp(options.missingWarn)
+        ? options.missingWarn
+        : true;
+    const fallbackWarn = isBoolean(options.fallbackWarn) || isRegExp(options.fallbackWarn)
+        ? options.fallbackWarn
+        : true;
+    const fallbackFormat = !!options.fallbackFormat;
+    const unresolving = !!options.unresolving;
+    const postTranslation = isFunction(options.postTranslation)
+        ? options.postTranslation
+        : null;
+    const processor = isPlainObject(options.processor) ? options.processor : null;
+    const warnHtmlMessage = isBoolean(options.warnHtmlMessage)
+        ? options.warnHtmlMessage
+        : true;
+    const escapeParameter = !!options.escapeParameter;
+    const messageCompiler = isFunction(options.messageCompiler)
+        ? options.messageCompiler
+        : _compiler;
+    const messageResolver = isFunction(options.messageResolver)
+        ? options.messageResolver
+        : _resolver || resolveWithKeyValue;
+    const localeFallbacker = isFunction(options.localeFallbacker)
+        ? options.localeFallbacker
+        : _fallbacker || fallbackWithSimple;
+    const fallbackContext = isObject(options.fallbackContext)
+        ? options.fallbackContext
+        : undefined;
+    const onWarn = isFunction(options.onWarn) ? options.onWarn : warn;
+    // setup internal options
+    const internalOptions = options;
+    const __datetimeFormatters = isObject(internalOptions.__datetimeFormatters)
+            ? internalOptions.__datetimeFormatters
+            : new Map()
+        ;
+    const __numberFormatters = isObject(internalOptions.__numberFormatters)
+            ? internalOptions.__numberFormatters
+            : new Map()
+        ;
+    const __meta = isObject(internalOptions.__meta) ? internalOptions.__meta : {};
+    _cid++;
+    const context = {
+        version,
+        cid: _cid,
+        locale,
+        fallbackLocale,
+        messages,
+        modifiers,
+        pluralRules,
+        missing,
+        missingWarn,
+        fallbackWarn,
+        fallbackFormat,
+        unresolving,
+        postTranslation,
+        processor,
+        warnHtmlMessage,
+        escapeParameter,
+        messageCompiler,
+        messageResolver,
+        localeFallbacker,
+        fallbackContext,
+        onWarn,
+        __meta
+    };
+    {
+        context.datetimeFormats = datetimeFormats;
+        context.numberFormats = numberFormats;
+        context.__datetimeFormatters = __datetimeFormatters;
+        context.__numberFormatters = __numberFormatters;
+    }
+    // NOTE: experimental !!
+    if (__INTLIFY_PROD_DEVTOOLS__) {
+        initI18nDevTools(context, version, __meta);
+    }
+    return context;
+}
+/** @internal */
+function handleMissing(context, key, locale, missingWarn, type) {
+    const { missing, onWarn } = context;
+    if (missing !== null) {
+        const ret = missing(context, locale, key, type);
+        return isString(ret) ? ret : key;
+    }
+    else {
+        return key;
+    }
+}
 /** @internal */
 function updateFallbackLocale(ctx, locale, fallback) {
     const context = ctx;
     context.__localeChainCache = new Map();
-    getLocaleChain(ctx, fallback, locale);
+    ctx.localeFallbacker(ctx, fallback, locale);
 }
 
+let code$1 = CompileErrorCodes.__EXTEND_POINT__;
+const inc$1 = () => ++code$1;
+const CoreErrorCodes = {
+    INVALID_ARGUMENT: code$1,
+    INVALID_DATE_ARGUMENT: inc$1(),
+    INVALID_ISO_DATE_ARGUMENT: inc$1(),
+    __EXTEND_POINT__: inc$1() // 18
+};
 function createCoreError(code) {
     return createCompileError(code, null, undefined);
 }
@@ -6831,7 +6967,7 @@ const NOOP_MESSAGE_FUNCTION = () => '';
 const isMessageFunction = (val) => isFunction(val);
 // implementation of `translate` function
 function translate(context, ...args) {
-    const { fallbackFormat, postTranslation, unresolving, fallbackLocale, messages } = context;
+    const { fallbackFormat, postTranslation, unresolving, messageCompiler, fallbackLocale, messages } = context;
     const [key, options] = parseTranslateArgs(...args);
     const missingWarn = isBoolean(options.missingWarn)
         ? options.missingWarn
@@ -6847,9 +6983,9 @@ function translate(context, ...args) {
     const defaultMsgOrKey = isString(options.default) || isBoolean(options.default) // default by function option
         ? !isBoolean(options.default)
             ? options.default
-            : key
+            : (!messageCompiler ? () => key : key)
         : fallbackFormat // default by `fallbackFormat` option
-            ? key
+            ? (!messageCompiler ? () => key : key)
             : '';
     const enableDefaultMsg = fallbackFormat || defaultMsgOrKey !== '';
     const locale = isString(options.locale) ? options.locale : context.locale;
@@ -6857,13 +6993,19 @@ function translate(context, ...args) {
     escapeParameter && escapeParams(options);
     // resolve message format
     // eslint-disable-next-line prefer-const
-    let [format, targetLocale, message] = !resolvedMessage
+    let [formatScope, targetLocale, message] = !resolvedMessage
         ? resolveMessageFormat(context, key, locale, fallbackLocale, fallbackWarn, missingWarn)
         : [
             key,
             locale,
             messages[locale] || {}
         ];
+    // NOTE:
+    //  Fix to work around `ssrTransfrom` bug in Vite.
+    //  https://github.com/vitejs/vite/issues/4306
+    //  To get around this, use temporary variables.
+    //  https://github.com/nuxt/framework/issues/1461#issuecomment-954606243
+    let format = formatScope;
     // if you use default message, set it as message format!
     let cacheBaseKey = key;
     if (!resolvedMessage &&
@@ -6897,7 +7039,9 @@ function translate(context, ...args) {
     const msgContext = createMessageContext(ctxOptions);
     const messaged = evaluateMessage(context, msg, msgContext);
     // if use post translation option, proceed it with handler
-    const ret = postTranslation ? postTranslation(messaged) : messaged;
+    const ret = postTranslation
+        ? postTranslation(messaged, key)
+        : messaged;
     // NOTE: experimental !!
     if (__INTLIFY_PROD_DEVTOOLS__) {
         // prettier-ignore
@@ -6927,7 +7071,7 @@ function escapeParams(options) {
     if (isArray(options.list)) {
         options.list = options.list.map(item => isString(item) ? escapeHtml(item) : item);
     }
-    else if (isObject$1(options.named)) {
+    else if (isObject(options.named)) {
         Object.keys(options.named).forEach(key => {
             if (isString(options.named[key])) {
                 options.named[key] = escapeHtml(options.named[key]);
@@ -6936,8 +7080,8 @@ function escapeParams(options) {
     }
 }
 function resolveMessageFormat(context, key, locale, fallbackLocale, fallbackWarn, missingWarn) {
-    const { messages, onWarn } = context;
-    const locales = getLocaleChain(context, fallbackLocale, locale);
+    const { messages, onWarn, messageResolver: resolveValue, localeFallbacker } = context;
+    const locales = localeFallbacker(context, fallbackLocale, locale); // eslint-disable-line @typescript-eslint/no-explicit-any
     let message = {};
     let targetLocale;
     let format = null;
@@ -6952,7 +7096,8 @@ function resolveMessageFormat(context, key, locale, fallbackLocale, fallbackWarn
         }
         if (isString(format) || isFunction(format))
             break;
-        const missingRet = handleMissing(context, key, targetLocale, missingWarn, type);
+        const missingRet = handleMissing(context, // eslint-disable-line @typescript-eslint/no-explicit-any
+        key, targetLocale, missingWarn, type);
         if (missingRet !== key) {
             format = missingRet;
         }
@@ -6965,6 +7110,12 @@ function compileMessageFormat(context, key, targetLocale, format, cacheBaseKey, 
         const msg = format;
         msg.locale = msg.locale || targetLocale;
         msg.key = msg.key || key;
+        return msg;
+    }
+    if (messageCompiler == null) {
+        const msg = (() => format);
+        msg.locale = targetLocale;
+        msg.key = key;
         return msg;
     }
     const msg = messageCompiler(format, getCompileOptions(context, targetLocale, cacheBaseKey, format, warnHtmlMessage, errorDetector));
@@ -6982,7 +7133,7 @@ function parseTranslateArgs(...args) {
     const [arg1, arg2, arg3] = args;
     const options = {};
     if (!isString(arg1) && !isNumber(arg1) && !isMessageFunction(arg1)) {
-        throw createCoreError(14 /* INVALID_ARGUMENT */);
+        throw createCoreError(CoreErrorCodes.INVALID_ARGUMENT);
     }
     // prettier-ignore
     const key = isNumber(arg1)
@@ -7026,9 +7177,14 @@ function getCompileOptions(context, locale, key, source, warnHtmlMessage, errorD
     };
 }
 function getMessageContextOptions(context, locale, message, options) {
-    const { modifiers, pluralRules } = context;
+    const { modifiers, pluralRules, messageResolver: resolveValue, fallbackLocale, fallbackWarn, missingWarn, fallbackContext } = context;
     const resolveMessage = (key) => {
-        const val = resolveValue(message, key);
+        let val = resolveValue(message, key);
+        // fallback to root context
+        if (val == null && fallbackContext) {
+            const [, , message] = resolveMessageFormat(fallbackContext, key, locale, fallbackLocale, fallbackWarn, missingWarn);
+            val = resolveValue(message, key);
+        }
         if (isString(val)) {
             let occurred = false;
             const errorDetector = () => {
@@ -7070,7 +7226,7 @@ function getMessageContextOptions(context, locale, message, options) {
 
 // implementation of `datetime` function
 function datetime(context, ...args) {
-    const { datetimeFormats, unresolving, fallbackLocale, onWarn } = context;
+    const { datetimeFormats, unresolving, fallbackLocale, onWarn, localeFallbacker } = context;
     const { __datetimeFormatters } = context;
     const [key, value, options, overrides] = parseDateTimeArgs(...args);
     const missingWarn = isBoolean(options.missingWarn)
@@ -7081,9 +7237,10 @@ function datetime(context, ...args) {
         : context.fallbackWarn;
     const part = !!options.part;
     const locale = isString(options.locale) ? options.locale : context.locale;
-    const locales = getLocaleChain(context, fallbackLocale, locale);
+    const locales = localeFallbacker(context, // eslint-disable-line @typescript-eslint/no-explicit-any
+    fallbackLocale, locale);
     if (!isString(key) || key === '') {
-        return new Intl.DateTimeFormat(locale).format(value);
+        return new Intl.DateTimeFormat(locale, overrides).format(value);
     }
     // resolve format
     let datetimeFormat = {};
@@ -7097,7 +7254,7 @@ function datetime(context, ...args) {
         format = datetimeFormat[key];
         if (isPlainObject(format))
             break;
-        handleMissing(context, key, targetLocale, missingWarn, type);
+        handleMissing(context, key, targetLocale, missingWarn, type); // eslint-disable-line @typescript-eslint/no-explicit-any
     }
     // checking format and target locale
     if (!isPlainObject(format) || !isString(targetLocale)) {
@@ -7115,29 +7272,60 @@ function datetime(context, ...args) {
     return !part ? formatter.format(value) : formatter.formatToParts(value);
 }
 /** @internal */
+const DATETIME_FORMAT_OPTIONS_KEYS = [
+    'localeMatcher',
+    'weekday',
+    'era',
+    'year',
+    'month',
+    'day',
+    'hour',
+    'minute',
+    'second',
+    'timeZoneName',
+    'formatMatcher',
+    'hour12',
+    'timeZone',
+    'dateStyle',
+    'timeStyle',
+    'calendar',
+    'dayPeriod',
+    'numberingSystem',
+    'hourCycle',
+    'fractionalSecondDigits'
+];
+/** @internal */
 function parseDateTimeArgs(...args) {
     const [arg1, arg2, arg3, arg4] = args;
-    let options = {};
+    const options = {};
     let overrides = {};
     let value;
     if (isString(arg1)) {
         // Only allow ISO strings - other date formats are often supported,
         // but may cause different results in different browsers.
-        if (!/\d{4}-\d{2}-\d{2}(T.*)?/.test(arg1)) {
-            throw createCoreError(16 /* INVALID_ISO_DATE_ARGUMENT */);
+        const matches = arg1.match(/(\d{4}-\d{2}-\d{2})(T|\s)?(.*)/);
+        if (!matches) {
+            throw createCoreError(CoreErrorCodes.INVALID_ISO_DATE_ARGUMENT);
         }
-        value = new Date(arg1);
+        // Some browsers can not parse the iso datetime separated by space,
+        // this is a compromise solution by replace the 'T'/' ' with 'T'
+        const dateTime = matches[3]
+            ? matches[3].trim().startsWith('T')
+                ? `${matches[1].trim()}${matches[3].trim()}`
+                : `${matches[1].trim()}T${matches[3].trim()}`
+            : matches[1].trim();
+        value = new Date(dateTime);
         try {
             // This will fail if the date is not valid
             value.toISOString();
         }
         catch (e) {
-            throw createCoreError(16 /* INVALID_ISO_DATE_ARGUMENT */);
+            throw createCoreError(CoreErrorCodes.INVALID_ISO_DATE_ARGUMENT);
         }
     }
     else if (isDate(arg1)) {
         if (isNaN(arg1.getTime())) {
-            throw createCoreError(15 /* INVALID_DATE_ARGUMENT */);
+            throw createCoreError(CoreErrorCodes.INVALID_DATE_ARGUMENT);
         }
         value = arg1;
     }
@@ -7145,13 +7333,20 @@ function parseDateTimeArgs(...args) {
         value = arg1;
     }
     else {
-        throw createCoreError(14 /* INVALID_ARGUMENT */);
+        throw createCoreError(CoreErrorCodes.INVALID_ARGUMENT);
     }
     if (isString(arg2)) {
         options.key = arg2;
     }
     else if (isPlainObject(arg2)) {
-        options = arg2;
+        Object.keys(arg2).forEach(key => {
+            if (DATETIME_FORMAT_OPTIONS_KEYS.includes(key)) {
+                overrides[key] = arg2[key];
+            }
+            else {
+                options[key] = arg2[key];
+            }
+        });
     }
     if (isString(arg3)) {
         options.locale = arg3;
@@ -7178,7 +7373,7 @@ function clearDateTimeFormat(ctx, locale, format) {
 
 // implementation of `number` function
 function number(context, ...args) {
-    const { numberFormats, unresolving, fallbackLocale, onWarn } = context;
+    const { numberFormats, unresolving, fallbackLocale, onWarn, localeFallbacker } = context;
     const { __numberFormatters } = context;
     const [key, value, options, overrides] = parseNumberArgs(...args);
     const missingWarn = isBoolean(options.missingWarn)
@@ -7189,9 +7384,10 @@ function number(context, ...args) {
         : context.fallbackWarn;
     const part = !!options.part;
     const locale = isString(options.locale) ? options.locale : context.locale;
-    const locales = getLocaleChain(context, fallbackLocale, locale);
+    const locales = localeFallbacker(context, // eslint-disable-line @typescript-eslint/no-explicit-any
+    fallbackLocale, locale);
     if (!isString(key) || key === '') {
-        return new Intl.NumberFormat(locale).format(value);
+        return new Intl.NumberFormat(locale, overrides).format(value);
     }
     // resolve format
     let numberFormat = {};
@@ -7205,7 +7401,7 @@ function number(context, ...args) {
         format = numberFormat[key];
         if (isPlainObject(format))
             break;
-        handleMissing(context, key, targetLocale, missingWarn, type);
+        handleMissing(context, key, targetLocale, missingWarn, type); // eslint-disable-line @typescript-eslint/no-explicit-any
     }
     // checking format and target locale
     if (!isPlainObject(format) || !isString(targetLocale)) {
@@ -7223,19 +7419,49 @@ function number(context, ...args) {
     return !part ? formatter.format(value) : formatter.formatToParts(value);
 }
 /** @internal */
+const NUMBER_FORMAT_OPTIONS_KEYS = [
+    'localeMatcher',
+    'style',
+    'currency',
+    'currencyDisplay',
+    'currencySign',
+    'useGrouping',
+    'minimumIntegerDigits',
+    'minimumFractionDigits',
+    'maximumFractionDigits',
+    'minimumSignificantDigits',
+    'maximumSignificantDigits',
+    'compactDisplay',
+    'notation',
+    'signDisplay',
+    'unit',
+    'unitDisplay',
+    'roundingMode',
+    'roundingPriority',
+    'roundingIncrement',
+    'trailingZeroDisplay'
+];
+/** @internal */
 function parseNumberArgs(...args) {
     const [arg1, arg2, arg3, arg4] = args;
-    let options = {};
+    const options = {};
     let overrides = {};
     if (!isNumber(arg1)) {
-        throw createCoreError(14 /* INVALID_ARGUMENT */);
+        throw createCoreError(CoreErrorCodes.INVALID_ARGUMENT);
     }
     const value = arg1;
     if (isString(arg2)) {
         options.key = arg2;
     }
     else if (isPlainObject(arg2)) {
-        options = arg2;
+        Object.keys(arg2).forEach(key => {
+            if (NUMBER_FORMAT_OPTIONS_KEYS.includes(key)) {
+                overrides[key] = arg2[key];
+            }
+            else {
+                options[key] = arg2[key];
+            }
+        });
     }
     if (isString(arg3)) {
         options.locale = arg3;
@@ -7260,6 +7486,7 @@ function clearNumberFormat(ctx, locale, format) {
     }
 }
 
+// TODO: we could not exports for Node native ES Moudles yet...
 {
     if (typeof __INTLIFY_PROD_DEVTOOLS__ !== 'boolean') {
         getGlobalThis().__INTLIFY_PROD_DEVTOOLS__ = false;
@@ -7267,7 +7494,7 @@ function clearNumberFormat(ctx, locale, format) {
 }
 
 /*!
-  * vue-i18n v9.1.10
+  * vue-i18n v9.2.2
   * (c) 2022 kazuya kawaguchi
   * Released under the MIT License.
   */
@@ -7280,7 +7507,7 @@ function clearNumberFormat(ctx, locale, format) {
  *
  * @VueI18nGeneral
  */
-const VERSION = '9.1.10';
+const VERSION = '9.2.2';
 /**
  * This is only called in esm-bundler builds.
  * istanbul-ignore-next
@@ -7291,27 +7518,96 @@ function initFeatureFlags() {
     }
 }
 
+CoreWarnCodes.__EXTEND_POINT__;
+
+let code = CompileErrorCodes.__EXTEND_POINT__;
+const inc = () => ++code;
+const I18nErrorCodes = {
+    // composer module errors
+    UNEXPECTED_RETURN_TYPE: code,
+    // legacy module errors
+    INVALID_ARGUMENT: inc(),
+    // i18n module errors
+    MUST_BE_CALL_SETUP_TOP: inc(),
+    NOT_INSLALLED: inc(),
+    NOT_AVAILABLE_IN_LEGACY_MODE: inc(),
+    // directive module errors
+    REQUIRED_VALUE: inc(),
+    INVALID_VALUE: inc(),
+    // vue-devtools errors
+    CANNOT_SETUP_VUE_DEVTOOLS_PLUGIN: inc(),
+    NOT_INSLALLED_WITH_PROVIDE: inc(),
+    // unexpected error
+    UNEXPECTED_ERROR: inc(),
+    // not compatible legacy vue-i18n constructor
+    NOT_COMPATIBLE_LEGACY_VUE_I18N: inc(),
+    // bridge support vue 2.x only
+    BRIDGE_SUPPORT_VUE_2_ONLY: inc(),
+    // need to define `i18n` option in `allowComposition: true` and `useScope: 'local' at `useI18n``
+    MUST_DEFINE_I18N_OPTION_IN_ALLOW_COMPOSITION: inc(),
+    // Not available Compostion API in Legacy API mode. Please make sure that the legacy API mode is working properly
+    NOT_AVAILABLE_COMPOSITION_IN_LEGACY: inc(),
+    // for enhancement
+    __EXTEND_POINT__: inc() // 29
+};
 function createI18nError(code, ...args) {
     return createCompileError(code, null, undefined);
 }
 
-const DEVTOOLS_META = '__INTLIFY_META__';
-const TransrateVNodeSymbol = makeSymbol('__transrateVNode');
-const DatetimePartsSymbol = makeSymbol('__datetimeParts');
-const NumberPartsSymbol = makeSymbol('__numberParts');
-makeSymbol('__enableEmitter');
-makeSymbol('__disableEmitter');
+const TransrateVNodeSymbol = 
+/* #__PURE__*/ makeSymbol('__transrateVNode');
+const DatetimePartsSymbol = /* #__PURE__*/ makeSymbol('__datetimeParts');
+const NumberPartsSymbol = /* #__PURE__*/ makeSymbol('__numberParts');
 const SetPluralRulesSymbol = makeSymbol('__setPluralRules');
 makeSymbol('__intlifyMeta');
-const InejctWithOption = makeSymbol('__injectWithOption');
-let composerID = 0;
-function defineCoreMissingHandler(missing) {
-    return ((ctx, locale, key, type) => {
-        return missing(locale, key, getCurrentInstance() || undefined, type);
-    });
+const InejctWithOption = /* #__PURE__*/ makeSymbol('__injectWithOption');
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/**
+ * Transform flat json in obj to normal json in obj
+ */
+function handleFlatJson(obj) {
+    // check obj
+    if (!isObject(obj)) {
+        return obj;
+    }
+    for (const key in obj) {
+        // check key
+        if (!hasOwn(obj, key)) {
+            continue;
+        }
+        // handle for normal json
+        if (!key.includes('.')) {
+            // recursive process value if value is also a object
+            if (isObject(obj[key])) {
+                handleFlatJson(obj[key]);
+            }
+        }
+        // handle for flat json, transform to normal json
+        else {
+            // go to the last object
+            const subKeys = key.split('.');
+            const lastIndex = subKeys.length - 1;
+            let currentObj = obj;
+            for (let i = 0; i < lastIndex; i++) {
+                if (!(subKeys[i] in currentObj)) {
+                    currentObj[subKeys[i]] = {};
+                }
+                currentObj = currentObj[subKeys[i]];
+            }
+            // update last object value, delete old property
+            currentObj[subKeys[lastIndex]] = obj[key];
+            delete obj[key];
+            // recursive process value if value is also a object
+            if (isObject(currentObj[subKeys[lastIndex]])) {
+                handleFlatJson(currentObj[subKeys[lastIndex]]);
+            }
+        }
+    }
+    return obj;
 }
 function getLocaleMessages(locale, options) {
-    const { messages, __i18n } = options;
+    const { messages, __i18n, messageResolver, flatJson } = options;
     // prettier-ignore
     const ret = isPlainObject(messages)
         ? messages
@@ -7320,35 +7616,41 @@ function getLocaleMessages(locale, options) {
             : { [locale]: {} };
     // merge locale messages of i18n custom block
     if (isArray(__i18n)) {
-        __i18n.forEach(({ locale, resource }) => {
-            if (locale) {
-                ret[locale] = ret[locale] || {};
-                deepCopy(resource, ret[locale]);
+        __i18n.forEach(custom => {
+            if ('locale' in custom && 'resource' in custom) {
+                const { locale, resource } = custom;
+                if (locale) {
+                    ret[locale] = ret[locale] || {};
+                    deepCopy(resource, ret[locale]);
+                }
+                else {
+                    deepCopy(resource, ret);
+                }
             }
             else {
-                deepCopy(resource, ret);
+                isString(custom) && deepCopy(JSON.parse(custom), ret);
             }
         });
     }
     // handle messages for flat json
-    if (options.flatJson) {
+    if (messageResolver == null && flatJson) {
         for (const key in ret) {
-            if (hasOwn$1(ret, key)) {
+            if (hasOwn(ret, key)) {
                 handleFlatJson(ret[key]);
             }
         }
     }
     return ret;
 }
-const isNotObjectOrIsArray = (val) => !isObject$1(val) || isArray(val);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const isNotObjectOrIsArray = (val) => !isObject(val) || isArray(val);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-module-boundary-types
 function deepCopy(src, des) {
     // src and des should both be objects, and non of then can be a array
     if (isNotObjectOrIsArray(src) || isNotObjectOrIsArray(des)) {
-        throw createI18nError(20 /* INVALID_VALUE */);
+        throw createI18nError(I18nErrorCodes.INVALID_VALUE);
     }
     for (const key in src) {
-        if (hasOwn$1(src, key)) {
+        if (hasOwn(src, key)) {
             if (isNotObjectOrIsArray(src[key]) || isNotObjectOrIsArray(des[key])) {
                 // replace with src[key] when:
                 // src[key] or des[key] is not a object, or
@@ -7362,11 +7664,68 @@ function deepCopy(src, des) {
         }
     }
 }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getComponentOptions(instance) {
+    return instance.type ;
+}
+function adjustI18nResources(global, options, componentOptions // eslint-disable-line @typescript-eslint/no-explicit-any
+) {
+    let messages = isObject(options.messages) ? options.messages : {};
+    if ('__i18nGlobal' in componentOptions) {
+        messages = getLocaleMessages(global.locale.value, {
+            messages,
+            __i18n: componentOptions.__i18nGlobal
+        });
+    }
+    // merge locale messages
+    const locales = Object.keys(messages);
+    if (locales.length) {
+        locales.forEach(locale => {
+            global.mergeLocaleMessage(locale, messages[locale]);
+        });
+    }
+    {
+        // merge datetime formats
+        if (isObject(options.datetimeFormats)) {
+            const locales = Object.keys(options.datetimeFormats);
+            if (locales.length) {
+                locales.forEach(locale => {
+                    global.mergeDateTimeFormat(locale, options.datetimeFormats[locale]);
+                });
+            }
+        }
+        // merge number formats
+        if (isObject(options.numberFormats)) {
+            const locales = Object.keys(options.numberFormats);
+            if (locales.length) {
+                locales.forEach(locale => {
+                    global.mergeNumberFormat(locale, options.numberFormats[locale]);
+                });
+            }
+        }
+    }
+}
+function createTextNode(key) {
+    return createVNode(Text, null, key, 0)
+        ;
+}
+/* eslint-enable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// extend VNode interface
+const DEVTOOLS_META = '__INTLIFY_META__';
+let composerID = 0;
+function defineCoreMissingHandler(missing) {
+    return ((ctx, locale, key, type) => {
+        return missing(locale, key, getCurrentInstance() || undefined, type);
+    });
+}
 // for Intlify DevTools
 const getMetaInfo =  () => {
     const instance = getCurrentInstance();
-    return instance && instance.type[DEVTOOLS_META] // eslint-disable-line @typescript-eslint/no-explicit-any
-        ? { [DEVTOOLS_META]: instance.type[DEVTOOLS_META] } // eslint-disable-line @typescript-eslint/no-explicit-any
+    let meta = null; // eslint-disable-line @typescript-eslint/no-explicit-any
+    return instance && (meta = getComponentOptions(instance)[DEVTOOLS_META])
+        ? { [DEVTOOLS_META]: meta } // eslint-disable-line @typescript-eslint/no-explicit-any
         : null;
 };
 /**
@@ -7374,7 +7733,8 @@ const getMetaInfo =  () => {
  *
  * @internal
  */
-function createComposer(options = {}) {
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+function createComposer(options = {}, VueI18nLegacy) {
     const { __root } = options;
     const _isGlobal = __root === undefined;
     let _inheritLocale = isBoolean(options.inheritLocale)
@@ -7386,7 +7746,7 @@ function createComposer(options = {}) {
         ? __root.locale.value
         : isString(options.locale)
             ? options.locale
-            : 'en-US');
+            : DEFAULT_LOCALE);
     const _fallbackLocale = ref(
     // prettier-ignore
     __root && _inheritLocale
@@ -7398,12 +7758,16 @@ function createComposer(options = {}) {
             ? options.fallbackLocale
             : _locale.value);
     const _messages = ref(getLocaleMessages(_locale.value, options));
+    // prettier-ignore
     const _datetimeFormats = ref(isPlainObject(options.datetimeFormats)
-        ? options.datetimeFormats
-        : { [_locale.value]: {} });
+            ? options.datetimeFormats
+            : { [_locale.value]: {} })
+        ;
+    // prettier-ignore
     const _numberFormats = ref(isPlainObject(options.numberFormats)
-        ? options.numberFormats
-        : { [_locale.value]: {} });
+            ? options.numberFormats
+            : { [_locale.value]: {} })
+        ;
     // warning suppress options
     // prettier-ignore
     let _missingWarn = __root
@@ -7434,9 +7798,12 @@ function createComposer(options = {}) {
     let _postTranslation = isFunction(options.postTranslation)
         ? options.postTranslation
         : null;
-    let _warnHtmlMessage = isBoolean(options.warnHtmlMessage)
-        ? options.warnHtmlMessage
-        : true;
+    // prettier-ignore
+    let _warnHtmlMessage = __root
+        ? __root.warnHtmlMessage
+        : isBoolean(options.warnHtmlMessage)
+            ? options.warnHtmlMessage
+            : true;
     let _escapeParameter = !!options.escapeParameter;
     // custom linked modifiers
     // prettier-ignore
@@ -7450,14 +7817,13 @@ function createComposer(options = {}) {
     // runtime context
     // eslint-disable-next-line prefer-const
     let _context;
-    function getCoreContext() {
-        return createCoreContext({
+    const getCoreContext = () => {
+        _isGlobal && setFallbackContext(null);
+        const ctxOptions = {
             version: VERSION,
             locale: _locale.value,
             fallbackLocale: _fallbackLocale.value,
             messages: _messages.value,
-            datetimeFormats: _datetimeFormats.value,
-            numberFormats: _numberFormats.value,
             modifiers: _modifiers,
             pluralRules: _pluralRules,
             missing: _runtimeMissing === null ? undefined : _runtimeMissing,
@@ -7468,29 +7834,35 @@ function createComposer(options = {}) {
             postTranslation: _postTranslation === null ? undefined : _postTranslation,
             warnHtmlMessage: _warnHtmlMessage,
             escapeParameter: _escapeParameter,
-            __datetimeFormatters: isPlainObject(_context)
-                ? _context.__datetimeFormatters
-                : undefined,
-            __numberFormatters: isPlainObject(_context)
-                ? _context.__numberFormatters
-                : undefined,
-            __v_emitter: isPlainObject(_context)
-                ? _context.__v_emitter
-                : undefined,
+            messageResolver: options.messageResolver,
             __meta: { framework: 'vue' }
-        });
-    }
+        };
+        {
+            ctxOptions.datetimeFormats = _datetimeFormats.value;
+            ctxOptions.numberFormats = _numberFormats.value;
+            ctxOptions.__datetimeFormatters = isPlainObject(_context)
+                ? _context.__datetimeFormatters
+                : undefined;
+            ctxOptions.__numberFormatters = isPlainObject(_context)
+                ? _context.__numberFormatters
+                : undefined;
+        }
+        const ctx = createCoreContext(ctxOptions);
+        _isGlobal && setFallbackContext(ctx);
+        return ctx;
+    };
     _context = getCoreContext();
     updateFallbackLocale(_context, _locale.value, _fallbackLocale.value);
     // track reactivity
     function trackReactivityValues() {
         return [
-            _locale.value,
-            _fallbackLocale.value,
-            _messages.value,
-            _datetimeFormats.value,
-            _numberFormats.value
-        ];
+                _locale.value,
+                _fallbackLocale.value,
+                _messages.value,
+                _datetimeFormats.value,
+                _numberFormats.value
+            ]
+            ;
     }
     // locale
     const locale = computed({
@@ -7512,9 +7884,9 @@ function createComposer(options = {}) {
     // messages
     const messages = computed(() => _messages.value);
     // datetimeFormats
-    const datetimeFormats = computed(() => _datetimeFormats.value);
+    const datetimeFormats = /* #__PURE__*/ computed(() => _datetimeFormats.value);
     // numberFormats
-    const numberFormats = computed(() => _numberFormats.value);
+    const numberFormats = /* #__PURE__*/ computed(() => _numberFormats.value);
     // getPostTranslationHandler
     function getPostTranslationHandler() {
         return isFunction(_postTranslation) ? _postTranslation : null;
@@ -7536,17 +7908,25 @@ function createComposer(options = {}) {
         _missing = handler;
         _context.missing = _runtimeMissing;
     }
-    function wrapWithDeps(fn, argumentParser, warnType, fallbackSuccess, fallbackFail, successCondition) {
+    const wrapWithDeps = (fn, argumentParser, warnType, fallbackSuccess, fallbackFail, successCondition) => {
         trackReactivityValues(); // track reactive dependency
         // NOTE: experimental !!
         let ret;
         if (__INTLIFY_PROD_DEVTOOLS__) {
             try {
                 setAdditionalMeta(getMetaInfo());
+                if (!_isGlobal) {
+                    _context.fallbackContext = __root
+                        ? getFallbackContext()
+                        : undefined;
+                }
                 ret = fn(_context);
             }
             finally {
                 setAdditionalMeta(null);
+                if (!_isGlobal) {
+                    _context.fallbackContext = undefined;
+                }
             }
         }
         else {
@@ -7563,32 +7943,34 @@ function createComposer(options = {}) {
         }
         else {
             /* istanbul ignore next */
-            throw createI18nError(14 /* UNEXPECTED_RETURN_TYPE */);
+            throw createI18nError(I18nErrorCodes.UNEXPECTED_RETURN_TYPE);
         }
-    }
+    };
     // t
     function t(...args) {
-        return wrapWithDeps(context => translate(context, ...args), () => parseTranslateArgs(...args), 'translate', root => root.t(...args), key => key, val => isString(val));
+        return wrapWithDeps(context => Reflect.apply(translate, null, [context, ...args]), () => parseTranslateArgs(...args), 'translate', root => Reflect.apply(root.t, root, [...args]), key => key, val => isString(val));
     }
     // rt
     function rt(...args) {
         const [arg1, arg2, arg3] = args;
-        if (arg3 && !isObject$1(arg3)) {
-            throw createI18nError(15 /* INVALID_ARGUMENT */);
+        if (arg3 && !isObject(arg3)) {
+            throw createI18nError(I18nErrorCodes.INVALID_ARGUMENT);
         }
         return t(...[arg1, arg2, assign({ resolvedMessage: true }, arg3 || {})]);
     }
     // d
     function d(...args) {
-        return wrapWithDeps(context => datetime(context, ...args), () => parseDateTimeArgs(...args), 'datetime format', root => root.d(...args), () => MISSING_RESOLVE_VALUE, val => isString(val));
+        return wrapWithDeps(context => Reflect.apply(datetime, null, [context, ...args]), () => parseDateTimeArgs(...args), 'datetime format', root => Reflect.apply(root.d, root, [...args]), () => MISSING_RESOLVE_VALUE, val => isString(val));
     }
     // n
     function n(...args) {
-        return wrapWithDeps(context => number(context, ...args), () => parseNumberArgs(...args), 'number format', root => root.n(...args), () => MISSING_RESOLVE_VALUE, val => isString(val));
+        return wrapWithDeps(context => Reflect.apply(number, null, [context, ...args]), () => parseNumberArgs(...args), 'number format', root => Reflect.apply(root.n, root, [...args]), () => MISSING_RESOLVE_VALUE, val => isString(val));
     }
     // for custom processor
     function normalize(values) {
-        return values.map(val => isString(val) ? createVNode(Text, null, val, 0) : val);
+        return values.map(val => isString(val) || isNumber(val) || isBoolean(val)
+            ? createTextNode(String(val))
+            : val);
     }
     const interpolate = (val) => val;
     const processor = {
@@ -7603,7 +7985,7 @@ function createComposer(options = {}) {
             const _context = context;
             try {
                 _context.processor = processor;
-                ret = translate(_context, ...args);
+                ret = Reflect.apply(translate, null, [_context, ...args]);
             }
             finally {
                 _context.processor = null;
@@ -7611,17 +7993,17 @@ function createComposer(options = {}) {
             return ret;
         }, () => parseTranslateArgs(...args), 'translate', 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        root => root[TransrateVNodeSymbol](...args), key => [createVNode(Text, null, key, 0)], val => isArray(val));
+        root => root[TransrateVNodeSymbol](...args), key => [createTextNode(key)], val => isArray(val));
     }
     // numberParts, using for `i18n-n` component
     function numberParts(...args) {
-        return wrapWithDeps(context => number(context, ...args), () => parseNumberArgs(...args), 'number format', 
+        return wrapWithDeps(context => Reflect.apply(number, null, [context, ...args]), () => parseNumberArgs(...args), 'number format', 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         root => root[NumberPartsSymbol](...args), () => [], val => isString(val) || isArray(val));
     }
     // datetimeParts, using for `i18n-d` component
     function datetimeParts(...args) {
-        return wrapWithDeps(context => datetime(context, ...args), () => parseDateTimeArgs(...args), 'datetime format', 
+        return wrapWithDeps(context => Reflect.apply(datetime, null, [context, ...args]), () => parseDateTimeArgs(...args), 'datetime format', 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         root => root[DatetimePartsSymbol](...args), () => [], val => isString(val) || isArray(val));
     }
@@ -7633,14 +8015,14 @@ function createComposer(options = {}) {
     function te(key, locale) {
         const targetLocale = isString(locale) ? locale : _locale.value;
         const message = getLocaleMessage(targetLocale);
-        return resolveValue(message, key) !== null;
+        return _context.messageResolver(message, key) !== null;
     }
     function resolveMessages(key) {
         let messages = null;
-        const locales = getLocaleChain(_context, _fallbackLocale.value, _locale.value);
+        const locales = fallbackWithLocaleChain(_context, _fallbackLocale.value, _locale.value);
         for (let i = 0; i < locales.length; i++) {
             const targetLocaleMessages = _messages.value[locales[i]] || {};
-            const messageValue = resolveValue(targetLocaleMessages, key);
+            const messageValue = _context.messageResolver(targetLocaleMessages, key);
             if (messageValue != null) {
                 messages = messageValue;
                 break;
@@ -7708,7 +8090,7 @@ function createComposer(options = {}) {
     // for debug
     composerID++;
     // watch root locale & fallbackLocale
-    if (__root) {
+    if (__root && inBrowser) {
         watch(__root.locale, (val) => {
             if (_inheritLocale) {
                 _locale.value = val;
@@ -7724,7 +8106,7 @@ function createComposer(options = {}) {
             }
         });
     }
-    // define composition API!
+    // define basic composition API!
     const composer = {
         id: composerID,
         locale,
@@ -7744,8 +8126,6 @@ function createComposer(options = {}) {
             return Object.keys(_messages.value).sort();
         },
         messages,
-        datetimeFormats,
-        numberFormats,
         get modifiers() {
             return _modifiers;
         },
@@ -7797,32 +8177,37 @@ function createComposer(options = {}) {
             _context.escapeParameter = val;
         },
         t,
-        rt,
-        d,
-        n,
-        te,
-        tm,
         getLocaleMessage,
         setLocaleMessage,
         mergeLocaleMessage,
-        getDateTimeFormat,
-        setDateTimeFormat,
-        mergeDateTimeFormat,
-        getNumberFormat,
-        setNumberFormat,
-        mergeNumberFormat,
         getPostTranslationHandler,
         setPostTranslationHandler,
         getMissingHandler,
         setMissingHandler,
-        [TransrateVNodeSymbol]: transrateVNode,
-        [NumberPartsSymbol]: numberParts,
-        [DatetimePartsSymbol]: datetimeParts,
-        [SetPluralRulesSymbol]: setPluralRules,
-        [InejctWithOption]: options.__injectWithOption // eslint-disable-line @typescript-eslint/no-explicit-any
+        [SetPluralRulesSymbol]: setPluralRules
     };
+    {
+        composer.datetimeFormats = datetimeFormats;
+        composer.numberFormats = numberFormats;
+        composer.rt = rt;
+        composer.te = te;
+        composer.tm = tm;
+        composer.d = d;
+        composer.n = n;
+        composer.getDateTimeFormat = getDateTimeFormat;
+        composer.setDateTimeFormat = setDateTimeFormat;
+        composer.mergeDateTimeFormat = mergeDateTimeFormat;
+        composer.getNumberFormat = getNumberFormat;
+        composer.setNumberFormat = setNumberFormat;
+        composer.mergeNumberFormat = mergeNumberFormat;
+        composer[InejctWithOption] = options.__injectWithOption;
+        composer[TransrateVNodeSymbol] = transrateVNode;
+        composer[DatetimePartsSymbol] = datetimeParts;
+        composer[NumberPartsSymbol] = numberParts;
+    }
     return composer;
 }
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 const baseFormatProps = {
     tag: {
@@ -7833,13 +8218,45 @@ const baseFormatProps = {
     },
     scope: {
         type: String,
-        validator: (val) => val === 'parent' || val === 'global',
-        default: 'parent'
+        // NOTE: avoid https://github.com/microsoft/rushstack/issues/1050
+        validator: (val /* ComponetI18nScope */) => val === 'parent' || val === 'global',
+        default: 'parent' /* ComponetI18nScope */
     },
     i18n: {
         type: Object
     }
 };
+
+function getInterpolateArg(
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+{ slots }, // SetupContext,
+keys) {
+    if (keys.length === 1 && keys[0] === 'default') {
+        // default slot with list
+        const ret = slots.default ? slots.default() : [];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return ret.reduce((slot, current) => {
+            return (slot = [
+                ...slot,
+                ...(isArray(current.children) ? current.children : [current])
+            ]);
+        }, []);
+    }
+    else {
+        // named slots
+        return keys.reduce((arg, key) => {
+            const slot = slots[key];
+            if (slot) {
+                arg[key] = slot();
+            }
+            return arg;
+        }, {});
+    }
+}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getFragmentableTag(tag) {
+    return Fragment ;
+}
 
 /**
  * Translation Component
@@ -7890,7 +8307,7 @@ const baseFormatProps = {
  *
  * @VueI18nComponent
  */
-({
+/* defineComponent */ ({
     /* eslint-disable */
     name: 'i18n-t',
     props: assign({
@@ -7905,15 +8322,17 @@ const baseFormatProps = {
         }
     }, baseFormatProps),
     /* eslint-enable */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     setup(props, context) {
         const { slots, attrs } = context;
+        // NOTE: avoid https://github.com/microsoft/rushstack/issues/1050
         const i18n = props.i18n ||
             useI18n({
                 useScope: props.scope,
                 __useComponent: true
             });
-        const keys = Object.keys(slots).filter(key => key !== '_');
         return () => {
+            const keys = Object.keys(slots).filter(key => key !== '_');
             const options = {};
             if (props.locale) {
                 options.locale = props.locale;
@@ -7925,32 +8344,17 @@ const baseFormatProps = {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const children = i18n[TransrateVNodeSymbol](props.keypath, arg, options);
             const assignedAttrs = assign({}, attrs);
-            // prettier-ignore
-            return isString(props.tag)
-                ? h(props.tag, assignedAttrs, children)
-                : isObject$1(props.tag)
-                    ? h(props.tag, assignedAttrs, children)
-                    : h(Fragment, assignedAttrs, children);
+            const tag = isString(props.tag) || isObject(props.tag)
+                ? props.tag
+                : getFragmentableTag();
+            return h(tag, assignedAttrs, children);
         };
     }
 });
-function getInterpolateArg({ slots }, keys) {
-    if (keys.length === 1 && keys[0] === 'default') {
-        // default slot only
-        return slots.default ? slots.default() : [];
-    }
-    else {
-        // named slots
-        return keys.reduce((arg, key) => {
-            const slot = slots[key];
-            if (slot) {
-                arg[key] = slot();
-            }
-            return arg;
-        }, {});
-    }
-}
 
+function isVNode(target) {
+    return isArray(target) && !isString(target[0]);
+}
 function renderFormatter(props, context, slotKeys, partFormatter) {
     const { slots, attrs } = context;
     return () => {
@@ -7962,7 +8366,7 @@ function renderFormatter(props, context, slotKeys, partFormatter) {
         if (isString(props.format)) {
             options.key = props.format;
         }
-        else if (isObject$1(props.format)) {
+        else if (isObject(props.format)) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             if (isString(props.format.key)) {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -7980,41 +8384,26 @@ function renderFormatter(props, context, slotKeys, partFormatter) {
         if (isArray(parts)) {
             children = parts.map((part, index) => {
                 const slot = slots[part.type];
-                return slot
+                const node = slot
                     ? slot({ [part.type]: part.value, index, parts })
                     : [part.value];
+                if (isVNode(node)) {
+                    node[0].key = `${part.type}-${index}`;
+                }
+                return node;
             });
         }
         else if (isString(parts)) {
             children = [parts];
         }
         const assignedAttrs = assign({}, attrs);
-        // prettier-ignore
-        return isString(props.tag)
-            ? h(props.tag, assignedAttrs, children)
-            : isObject$1(props.tag)
-                ? h(props.tag, assignedAttrs, children)
-                : h(Fragment, assignedAttrs, children);
+        const tag = isString(props.tag) || isObject(props.tag)
+            ? props.tag
+            : getFragmentableTag();
+        return h(tag, assignedAttrs, children);
     };
 }
 
-const NUMBER_FORMAT_KEYS = [
-    'localeMatcher',
-    'style',
-    'unit',
-    'unitDisplay',
-    'currency',
-    'currencyDisplay',
-    'useGrouping',
-    'numberingSystem',
-    'minimumIntegerDigits',
-    'minimumFractionDigits',
-    'maximumFractionDigits',
-    'minimumSignificantDigits',
-    'maximumSignificantDigits',
-    'notation',
-    'formatMatcher'
-];
 /**
  * Number Format Component
  *
@@ -8032,7 +8421,7 @@ const NUMBER_FORMAT_KEYS = [
  *
  * @VueI18nComponent
  */
-({
+/* defineComponent */ ({
     /* eslint-disable */
     name: 'i18n-n',
     props: assign({
@@ -8045,37 +8434,16 @@ const NUMBER_FORMAT_KEYS = [
         }
     }, baseFormatProps),
     /* eslint-enable */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     setup(props, context) {
         const i18n = props.i18n ||
             useI18n({ useScope: 'parent', __useComponent: true });
-        return renderFormatter(props, context, NUMBER_FORMAT_KEYS, (...args) => 
+        return renderFormatter(props, context, NUMBER_FORMAT_OPTIONS_KEYS, (...args) => 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         i18n[NumberPartsSymbol](...args));
     }
 });
 
-const DATETIME_FORMAT_KEYS = [
-    'dateStyle',
-    'timeStyle',
-    'fractionalSecondDigits',
-    'calendar',
-    'dayPeriod',
-    'numberingSystem',
-    'localeMatcher',
-    'timeZone',
-    'hour12',
-    'hourCycle',
-    'formatMatcher',
-    'weekday',
-    'era',
-    'year',
-    'month',
-    'day',
-    'hour',
-    'minute',
-    'second',
-    'timeZoneName'
-];
 /**
  * Datetime Format Component
  *
@@ -8093,7 +8461,7 @@ const DATETIME_FORMAT_KEYS = [
  *
  * @VueI18nComponent
  */
-({
+/*defineComponent */ ({
     /* eslint-disable */
     name: 'i18n-d',
     props: assign({
@@ -8106,240 +8474,109 @@ const DATETIME_FORMAT_KEYS = [
         }
     }, baseFormatProps),
     /* eslint-enable */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     setup(props, context) {
         const i18n = props.i18n ||
             useI18n({ useScope: 'parent', __useComponent: true });
-        return renderFormatter(props, context, DATETIME_FORMAT_KEYS, (...args) => 
+        return renderFormatter(props, context, DATETIME_FORMAT_OPTIONS_KEYS, (...args) => 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         i18n[DatetimePartsSymbol](...args));
     }
 });
 
 /**
- * Vue I18n factory
- *
- * @param options - An options, see the {@link I18nOptions}
- *
- * @returns {@link I18n} instance
+ * Injection key for {@link useI18n}
  *
  * @remarks
- * If you use Legacy API mode, you need toto specify {@link VueI18nOptions} and `legacy: true` option.
- *
- * If you use composition API mode, you need to specify {@link ComposerOptions}.
- *
- * @VueI18nSee [Getting Started](../guide/)
- * @VueI18nSee [Composition API](../guide/advanced/composition)
- *
- * @example
- * case: for Legacy API
- * ```js
- * import { createApp } from 'vue'
- * import { createI18n } from 'vue-i18n'
- *
- * // call with I18n option
- * const i18n = createI18n({
- *   locale: 'ja',
- *   messages: {
- *     en: { ... },
- *     ja: { ... }
- *   }
- * })
- *
- * const App = {
- *   // ...
- * }
- *
- * const app = createApp(App)
- *
- * // install!
- * app.use(i18n)
- * app.mount('#app')
- * ```
- *
- * @example
- * case: for composition API
- * ```js
- * import { createApp } from 'vue'
- * import { createI18n, useI18n } from 'vue-i18n'
- *
- * // call with I18n option
- * const i18n = createI18n({
- *   legacy: false, // you must specify 'legacy: false' option
- *   locale: 'ja',
- *   messages: {
- *     en: { ... },
- *     ja: { ... }
- *   }
- * })
- *
- * const App = {
- *   setup() {
- *     // ...
- *     const { t } = useI18n({ ... })
- *     return { ... , t }
- *   }
- * }
- *
- * const app = createApp(App)
- *
- * // install!
- * app.use(i18n)
- * app.mount('#app')
- * ```
+ * The global injection key for I18n instances with `useI18n`. this injection key is used in Web Components.
+ * Specify the i18n instance created by {@link createI18n} together with `provide` function.
  *
  * @VueI18nGeneral
  */
-function createI18n(options = {}) {
-    const __globalInjection = !!options.globalInjection;
-    const __instances = new Map();
+const I18nInjectionKey = 
+/* #__PURE__*/ makeSymbol('global-vue-i18n');
+// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-module-boundary-types
+function createI18n(options = {}, VueI18nLegacy) {
     // prettier-ignore
-    const __global = createComposer(options);
+    const __globalInjection = isBoolean(options.globalInjection)
+        ? options.globalInjection
+        : true;
+    // prettier-ignore
+    const __allowComposition = true;
+    const __instances = new Map();
+    const [globalScope, __global] = createGlobal(options);
     const symbol = makeSymbol('');
-    const i18n = {
-        // mode
-        get mode() {
-            // prettier-ignore
-            return 'composition';
-        },
-        // install plugin
-        async install(app, ...options) {
-            // setup global provider
-            app.__VUE_I18N_SYMBOL__ = symbol;
-            app.provide(app.__VUE_I18N_SYMBOL__, i18n);
-            // global method and properties injection for Composition API
-            if (__globalInjection) {
-                injectGlobalFields(app, i18n.global);
-            }
-        },
-        // global accessor
-        get global() {
-            return __global;
-        },
-        // @internal
-        __instances,
-        // @internal
-        __getInstance(component) {
-            return __instances.get(component) || null;
-        },
-        // @internal
-        __setInstance(component, instance) {
-            __instances.set(component, instance);
-        },
-        // @internal
-        __deleteInstance(component) {
-            __instances.delete(component);
-        }
-    };
-    return i18n;
+    function __getInstance(component) {
+        return __instances.get(component) || null;
+    }
+    function __setInstance(component, instance) {
+        __instances.set(component, instance);
+    }
+    function __deleteInstance(component) {
+        __instances.delete(component);
+    }
+    {
+        const i18n = {
+            // mode
+            get mode() {
+                return 'composition';
+            },
+            // allowComposition
+            get allowComposition() {
+                return __allowComposition;
+            },
+            // install plugin
+            async install(app, ...options) {
+                // setup global provider
+                app.__VUE_I18N_SYMBOL__ = symbol;
+                app.provide(app.__VUE_I18N_SYMBOL__, i18n);
+                // global method and properties injection for Composition API
+                if (__globalInjection) {
+                    injectGlobalFields(app, i18n.global);
+                }
+                // release global scope
+                const unmountApp = app.unmount;
+                app.unmount = () => {
+                    i18n.dispose();
+                    unmountApp();
+                };
+            },
+            // global accessor
+            get global() {
+                return __global;
+            },
+            dispose() {
+                globalScope.stop();
+            },
+            // @internal
+            __instances,
+            // @internal
+            __getInstance,
+            // @internal
+            __setInstance,
+            // @internal
+            __deleteInstance
+        };
+        return i18n;
+    }
 }
-/**
- * Use Composition API for Vue I18n
- *
- * @param options - An options, see {@link UseI18nOptions}
- *
- * @returns {@link Composer} instance
- *
- * @remarks
- * This function is mainly used by `setup`.
- *
- * If options are specified, Composer instance is created for each component and you can be localized on the component.
- *
- * If options are not specified, you can be localized using the global Composer.
- *
- * @example
- * case: Component resource base localization
- * ```html
- * <template>
- *   <form>
- *     <label>{{ t('language') }}</label>
- *     <select v-model="locale">
- *       <option value="en">en</option>
- *       <option value="ja">ja</option>
- *     </select>
- *   </form>
- *   <p>message: {{ t('hello') }}</p>
- * </template>
- *
- * <script>
- * import { useI18n } from 'vue-i18n'
- *
- * export default {
- *  setup() {
- *    const { t, locale } = useI18n({
- *      locale: 'ja',
- *      messages: {
- *        en: { ... },
- *        ja: { ... }
- *      }
- *    })
- *    // Something to do ...
- *
- *    return { ..., t, locale }
- *  }
- * }
- * </script>
- * ```
- *
- * @VueI18nComposition
- */
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 function useI18n(options = {}) {
     const instance = getCurrentInstance();
     if (instance == null) {
-        throw createI18nError(16 /* MUST_BE_CALL_SETUP_TOP */);
+        throw createI18nError(I18nErrorCodes.MUST_BE_CALL_SETUP_TOP);
     }
-    if (!instance.appContext.app.__VUE_I18N_SYMBOL__) {
-        throw createI18nError(17 /* NOT_INSLALLED */);
+    if (!instance.isCE &&
+        instance.appContext.app != null &&
+        !instance.appContext.app.__VUE_I18N_SYMBOL__) {
+        throw createI18nError(I18nErrorCodes.NOT_INSLALLED);
     }
-    const i18n = inject(instance.appContext.app.__VUE_I18N_SYMBOL__);
-    /* istanbul ignore if */
-    if (!i18n) {
-        throw createI18nError(22 /* UNEXPECTED_ERROR */);
-    }
-    // prettier-ignore
-    const global = i18n.mode === 'composition'
-        ? i18n.global
-        : i18n.global.__composer;
-    // prettier-ignore
-    const scope = isEmptyObject(options)
-        ? ('__i18n' in instance.type)
-            ? 'local'
-            : 'global'
-        : !options.useScope
-            ? 'local'
-            : options.useScope;
+    const i18n = getI18nInstance(instance);
+    const global = getGlobalComposer(i18n);
+    const componentOptions = getComponentOptions(instance);
+    const scope = getScope(options, componentOptions);
     if (scope === 'global') {
-        let messages = isObject$1(options.messages) ? options.messages : {};
-        if ('__i18nGlobal' in instance.type) {
-            messages = getLocaleMessages(global.locale.value, {
-                messages,
-                __i18n: instance.type.__i18nGlobal
-            });
-        }
-        // merge locale messages
-        const locales = Object.keys(messages);
-        if (locales.length) {
-            locales.forEach(locale => {
-                global.mergeLocaleMessage(locale, messages[locale]);
-            });
-        }
-        // merge datetime formats
-        if (isObject$1(options.datetimeFormats)) {
-            const locales = Object.keys(options.datetimeFormats);
-            if (locales.length) {
-                locales.forEach(locale => {
-                    global.mergeDateTimeFormat(locale, options.datetimeFormats[locale]);
-                });
-            }
-        }
-        // merge number formats
-        if (isObject$1(options.numberFormats)) {
-            const locales = Object.keys(options.numberFormats);
-            if (locales.length) {
-                locales.forEach(locale => {
-                    global.mergeNumberFormat(locale, options.numberFormats[locale]);
-                });
-            }
-        }
+        adjustI18nResources(global, options, componentOptions);
         return global;
     }
     if (scope === 'parent') {
@@ -8350,17 +8587,12 @@ function useI18n(options = {}) {
         }
         return composer;
     }
-    // scope 'local' case
-    if (i18n.mode === 'legacy') {
-        throw createI18nError(18 /* NOT_AVAILABLE_IN_LEGACY_MODE */);
-    }
     const i18nInternal = i18n;
     let composer = i18nInternal.__getInstance(instance);
     if (composer == null) {
-        const type = instance.type;
         const composerOptions = assign({}, options);
-        if (type.__i18n) {
-            composerOptions.__i18n = type.__i18n;
+        if ('__i18n' in componentOptions) {
+            composerOptions.__i18n = componentOptions.__i18n;
         }
         if (global) {
             composerOptions.__root = global;
@@ -8371,6 +8603,49 @@ function useI18n(options = {}) {
     }
     return composer;
 }
+function createGlobal(options, legacyMode, VueI18nLegacy // eslint-disable-line @typescript-eslint/no-explicit-any
+) {
+    const scope = effectScope();
+    {
+        const obj = scope.run(() => createComposer(options));
+        if (obj == null) {
+            throw createI18nError(I18nErrorCodes.UNEXPECTED_ERROR);
+        }
+        return [scope, obj];
+    }
+}
+function getI18nInstance(instance) {
+    {
+        const i18n = inject(!instance.isCE
+            ? instance.appContext.app.__VUE_I18N_SYMBOL__
+            : I18nInjectionKey);
+        /* istanbul ignore if */
+        if (!i18n) {
+            throw createI18nError(!instance.isCE
+                ? I18nErrorCodes.UNEXPECTED_ERROR
+                : I18nErrorCodes.NOT_INSLALLED_WITH_PROVIDE);
+        }
+        return i18n;
+    }
+}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getScope(options, componentOptions) {
+    // prettier-ignore
+    return isEmptyObject(options)
+        ? ('__i18n' in componentOptions)
+            ? 'local'
+            : 'global'
+        : !options.useScope
+            ? 'local'
+            : options.useScope;
+}
+function getGlobalComposer(i18n) {
+    // prettier-ignore
+    return i18n.mode === 'composition'
+            ? i18n.global
+            : i18n.global.__composer
+        ;
+}
 function getComposer(i18n, target, useComponent = false) {
     let composer = null;
     const root = target.root;
@@ -8379,17 +8654,6 @@ function getComposer(i18n, target, useComponent = false) {
         const i18nInternal = i18n;
         if (i18n.mode === 'composition') {
             composer = i18nInternal.__getInstance(current);
-        }
-        else {
-            const vueI18n = i18nInternal.__getInstance(current);
-            if (vueI18n != null) {
-                composer = vueI18n
-                    .__composer;
-            }
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            if (useComponent && composer && !composer[InejctWithOption]) {
-                composer = null;
-            }
         }
         if (composer != null) {
             break;
@@ -8402,24 +8666,26 @@ function getComposer(i18n, target, useComponent = false) {
     return composer;
 }
 function setupLifeCycle(i18n, target, composer) {
-    onMounted(() => {
-    }, target);
-    onUnmounted(() => {
-        i18n.__deleteInstance(target);
-    }, target);
+    {
+        onMounted(() => {
+        }, target);
+        onUnmounted(() => {
+            i18n.__deleteInstance(target);
+        }, target);
+    }
 }
 const globalExportProps = [
     'locale',
     'fallbackLocale',
     'availableLocales'
 ];
-const globalExportMethods = ['t', 'rt', 'd', 'n', 'tm'];
+const globalExportMethods = ['t', 'rt', 'd', 'n', 'tm'] ;
 function injectGlobalFields(app, composer) {
     const i18n = Object.create(null);
     globalExportProps.forEach(prop => {
         const desc = Object.getOwnPropertyDescriptor(composer, prop);
         if (!desc) {
-            throw createI18nError(22 /* UNEXPECTED_ERROR */);
+            throw createI18nError(I18nErrorCodes.UNEXPECTED_ERROR);
         }
         const wrap = isRef(desc.value) // check computed props
             ? {
@@ -8442,12 +8708,16 @@ function injectGlobalFields(app, composer) {
     globalExportMethods.forEach(method => {
         const desc = Object.getOwnPropertyDescriptor(composer, method);
         if (!desc || !desc.value) {
-            throw createI18nError(22 /* UNEXPECTED_ERROR */);
+            throw createI18nError(I18nErrorCodes.UNEXPECTED_ERROR);
         }
         Object.defineProperty(app.config.globalProperties, `$${method}`, desc);
     });
 }
 
+// register message resolver at vue-i18n
+registerMessageResolver(resolveValue);
+// register fallback locale at vue-i18n
+registerLocaleFallbacker(fallbackWithLocaleChain);
 {
     initFeatureFlags();
 }
@@ -8458,7 +8728,7 @@ if (__INTLIFY_PROD_DEVTOOLS__) {
     setDevToolsHook(target.__INTLIFY_DEVTOOLS_GLOBAL_HOOK__);
 }
 
-function readCookie(key) {
+function readCookie(key = 'consents') {
   let index = document.cookie.indexOf(key + '=');
   if (index === -1) return {}
   const s = document.cookie.substring(index);
@@ -8471,14 +8741,15 @@ function readCookie(key) {
   }
 }
 
-function writeCookie(consents, sameSite = 'Lax', path = '/', secure = true) {
+function writeCookie(consents, key = 'consents', sameSite = 'Lax', path = '/', secure = true) {
   const d = new Date();
   d.setFullYear(d.getFullYear() + 1);
-  document.cookie = `${window.Consents.storageConsentsKey}=${JSON.stringify(consents)};expires=${d};samesite=${sameSite};path=${path};secure=${secure}`;
+  document.cookie = `${key}=${JSON.stringify(consents)};expires=${d};samesite=${sameSite};path=${path};secure=${secure}`;
 }
 
-function deleteCookie() {
-  document.cookie = `${window.Consents.storageConsentsKey}=;expires=Thu, 01-Jan-70 00:00:01 GMT;`;
+function deleteCookie(key = 'consents', value = '') {
+  const cookieValue = readCookie(key);
+  document.cookie = `${key}=${cookieValue};expires=Thu, 01-Jan-70 00:00:01 GMT;`;
 }
 
 function Consents$1(metaCookie, useMetaCookie, storagePrefix, storageConsentsKey, categories, consents) {
@@ -8486,7 +8757,7 @@ function Consents$1(metaCookie, useMetaCookie, storagePrefix, storageConsentsKey
     const allIds = [];
     let savedConsents = {};
     if (storageConsentsKey in localStorage) {
-      savedConsents = JSON.parse(localStorage.getItem(storageConsentsKey));
+      savedConsents = JSON.parse(localStorage.getItem(storageConsentsKey) || "{}");
     } else if (useMetaCookie) {
       savedConsents = readCookie(storageConsentsKey);
       if (Object.keys(savedConsents).length > 0)
@@ -8552,6 +8823,8 @@ function Consents$1(metaCookie, useMetaCookie, storagePrefix, storageConsentsKey
       if (id) {
         const key = `${this.storagePrefix}-${categoryId}-${cookieId}`;
         const savedConsents = JSON.parse(localStorage.getItem(this.storageConsentsKey) || "{}");
+        if (savedConsents[key] === void 0)
+          return;
         if (key in savedConsents) {
           savedConsents[key] = value;
           const category = categories.find((category2) => category2.id === id.categoryId);
@@ -8569,21 +8842,19 @@ function Consents$1(metaCookie, useMetaCookie, storagePrefix, storageConsentsKey
           consents2[`${this.storagePrefix}-${categoryId}-${cookieId}`] = value;
           writeCookie(consents2);
         }
-      } else {
-        console.log(`id: ${this.storagePrefix}-${categoryId}-${cookieId} doesn't exist. See Consents.ids or localStorage`);
       }
     },
     get(categoryId, cookieId) {
-      const value = localStorage.getItem(`${this.storagePrefix}-${categoryId}-${cookieId}`);
-      if (value)
-        return value === "true";
+      console.debug(Object.keys(localStorage));
+      const consents2 = JSON.parse(localStorage.getItem(this.storageConsentsKey) || "{}");
+      return consents2[`${this.storagePrefix}-${categoryId}-${cookieId}`] === "true";
     },
     get hasAccepted() {
       return this.storageConsentsKey in localStorage;
     },
     clear() {
       localStorage.removeItem(this.storageConsentsKey);
-      deleteCookie();
+      deleteCookie(this.storageConsentsKey);
       for (let i = 0; i < categories.length; i++) {
         if (categories[i].cookies) {
           for (let j = 0; j < categories[i].cookies.length; j++) {
@@ -8606,8 +8877,8 @@ var CookieConsent_vue_vue_type_style_index_0_lang = '';
 var CookieConsent_vue_vue_type_style_index_1_scoped_true_lang = '';
 
 function block0 (Component) {
-  Component.__i18n = Component.__i18n || [];
-  Component.__i18n.push({
+  Component.__i18nGlobal = Component.__i18nGlobal || [];
+  Component.__i18nGlobal.push({
     "locale": "",
     "resource": {
       "ar": {
@@ -8622,6 +8893,10 @@ function block0 (Component) {
           },
           "minimize": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["تصغير"])},
           "clearSite": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["حذف البيانات"])},
+          "info": {
+            "title": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["عنوان تفسيري"])},
+            "text": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["✓ = تم قبول جميع ملفات تعريف الارتباط في هذه الفئة\n▣ = تم قبول بعض ملفات تعريف الارتباط في هذه الفئة\n- = لم يتم قبول ملفات تعريف الارتباط في هذه الفئة"])}
+          },
           "button": {
             "acceptAll": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["كل قبول"])},
             "acceptSelection": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["اختيار حفظ"])}
@@ -8677,6 +8952,10 @@ function block0 (Component) {
           },
           "minimize": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Сведете до минимум"])},
           "clearSite": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Изтриване на данни"])},
+          "info": {
+            "title": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Легенда"])},
+            "text": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["✓ = Всички бисквитки в тази категория приети\n▣ = Някои бисквитки в тази категория приеха\n- = В тази категория няма приемани бисквитки"])}
+          },
           "button": {
             "acceptAll": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Приемете всички"])},
             "acceptSelection": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Запазване на избора"])}
@@ -8732,6 +9011,10 @@ function block0 (Component) {
           },
           "minimize": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Minimalizujte"])},
           "clearSite": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Odstranění dat"])},
+          "info": {
+            "title": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Legenda"])},
+            "text": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["✓ = Všechny soubory cookie v této kategorii jsou přijaty\n▣ = Některé soubory cookie přijaté v této kategorii\n- = V této kategorii nejsou přijímány žádné soubory cookie"])}
+          },
           "button": {
             "acceptAll": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Přijmout všechny"])},
             "acceptSelection": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Uložit výběr"])}
@@ -8787,6 +9070,10 @@ function block0 (Component) {
           },
           "minimize": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Minimer"])},
           "clearSite": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Slet data"])},
+          "info": {
+            "title": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Legende"])},
+            "text": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["✓ = Alle cookies i denne kategori accepteres\n▣ = Nogle af de cookies, der accepteres i denne kategori\n- = Ingen cookies accepteres i denne kategori"])}
+          },
           "button": {
             "acceptAll": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Accepter alle"])},
             "acceptSelection": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Accepter valg"])}
@@ -8901,6 +9188,10 @@ function block0 (Component) {
           },
           "minimize": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Ελαχιστοποίηση"])},
           "clearSite": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Διαγραφή δεδομένων"])},
+          "info": {
+            "title": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Υπόμνημα"])},
+            "text": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["✓ = Όλα τα cookies σε αυτή την κατηγορία αποδεκτά\n▣ = Μερικά cookies που γίνονται δεκτά σε αυτή την κατηγορία\n- = Δεν γίνονται δεκτά cookies σε αυτή την κατηγορία"])}
+          },
           "button": {
             "acceptAll": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Αποδοχή όλων"])},
             "acceptSelection": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Αποθήκευση επιλογής"])}
@@ -8956,6 +9247,10 @@ function block0 (Component) {
           },
           "minimize": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Minimize"])},
           "clearSite": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Delete data"])},
+          "info": {
+            "title": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Legend"])},
+            "text": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["✓ = All cookies in this category accepted\n▣ = Some cookies accepted in this category\n- = No cookies accepted in this category"])}
+          },
           "button": {
             "acceptAll": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Accept All"])},
             "acceptSelection": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Accept Selection"])}
@@ -9011,6 +9306,10 @@ function block0 (Component) {
           },
           "minimize": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Minimizar"])},
           "clearSite": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Borrar datos"])},
+          "info": {
+            "title": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Leyenda"])},
+            "text": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["✓ = Se aceptan todas las cookies de esta categoría\n▣ = Algunas cookies aceptadas en esta categoría\n- = No se aceptan cookies en esta categoría"])}
+          },
           "button": {
             "acceptAll": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Aceptar todo"])},
             "acceptSelection": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Guardar selección"])}
@@ -9066,6 +9365,10 @@ function block0 (Component) {
           },
           "minimize": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Minimeeri"])},
           "clearSite": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Andmete kustutamine"])},
+          "info": {
+            "title": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Legend"])},
+            "text": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["✓ = Kõik küpsised selles kategoorias on aktsepteeritud\n▣ = Mõned selles kategoorias aktsepteeritud küpsised\n- = Selles kategoorias ei ole küpsised lubatud"])}
+          },
           "button": {
             "acceptAll": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Võtke kõik vastu"])},
             "acceptSelection": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Salvesta valik"])}
@@ -9121,6 +9424,10 @@ function block0 (Component) {
           },
           "minimize": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Minimoi"])},
           "clearSite": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Tietojen poistaminen"])},
+          "info": {
+            "title": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Selite"])},
+            "text": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["✓ = Kaikki tämän luokan evästeet hyväksytty\n▣ = Joitakin tähän luokkaan hyväksyttyjä evästeitä\n- = Tässä kategoriassa ei hyväksytä evästeitä"])}
+          },
           "button": {
             "acceptAll": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Hyväksy kaikki"])},
             "acceptSelection": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Tallenna valinta"])}
@@ -9176,6 +9483,10 @@ function block0 (Component) {
           },
           "minimize": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Minimoi"])},
           "clearSite": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Supprimer les données"])},
+          "info": {
+            "title": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Légende"])},
+            "text": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["✓ = Tous les cookies de cette catégorie acceptés\n▣ = Quelques cookies de cette catégorie acceptés\n- = Aucun cookie de cette catégorie n'est accepté"])}
+          },
           "button": {
             "acceptAll": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Accepter tous"])},
             "acceptSelection": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Sauvegarder la sélection"])}
@@ -9231,6 +9542,10 @@ function block0 (Component) {
           },
           "minimize": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["छोटा करना"])},
           "clearSite": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["डेटा हटाएं"])},
+          "info": {
+            "title": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["दंतकथा"])},
+            "text": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["✓ = इस श्रेणी में सभी कुकीज़ ने स्वीकार किया\n▣ = इस श्रेणी में कुछ कुकीज़ स्वीकार किए जाते हैं\n- = इस श्रेणी में कोई कुकीज़ स्वीकार नहीं की"])}
+          },
           "button": {
             "acceptAll": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["सभी स्वीकार करते हैं"])},
             "acceptSelection": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["चयन सहेजें"])}
@@ -9286,6 +9601,10 @@ function block0 (Component) {
           },
           "minimize": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Minimizirajte"])},
           "clearSite": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Izbriši podatke"])},
+          "info": {
+            "title": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Legenda"])},
+            "text": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["✓ = Svi kolačići u ovoj kategoriji prihvaćeni su\n▣ = Neki kolačići u ovoj kategoriji prihvaćeni su\n- = Nije prihvaćen nijedan kolačići u ovoj kategoriji"])}
+          },
           "button": {
             "acceptAll": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Svi prihvaćaju"])},
             "acceptSelection": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Spremi odabir"])}
@@ -9341,6 +9660,10 @@ function block0 (Component) {
           },
           "minimize": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Minimalizálja a"])},
           "clearSite": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Adatok törlése"])},
+          "info": {
+            "title": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Legenda"])},
+            "text": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["✓ = Minden cookie ebben a kategóriában elfogadott\n▣ = Néhány ebben a kategóriában elfogadott cookie\n- = Ebben a kategóriában nem fogadunk el sütiket"])}
+          },
           "button": {
             "acceptAll": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Fogadjon el mindent"])},
             "acceptSelection": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Kiválasztás mentése"])}
@@ -9396,6 +9719,10 @@ function block0 (Component) {
           },
           "minimize": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Փոքրացնել"])},
           "clearSite": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Ջնջել տվյալները"])},
+          "info": {
+            "title": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Լեգենդ"])},
+            "text": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["✓ = Այս կատեգորիայում բոլոր Տեղեկանիշն ընդունված է\n▣ = Այս կատեգորիայում որոշ բլիթներ ընդունված են\n- = Այս կատեգորիայում ոչ մի բլիթ չի ընդունվում"])}
+          },
           "button": {
             "acceptAll": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Բոլորն ընդունում են"])},
             "acceptSelection": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Պահպանել ընտրությունը"])}
@@ -9451,6 +9778,10 @@ function block0 (Component) {
           },
           "minimize": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Minimizzare"])},
           "clearSite": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Cancellare i dati"])},
+          "info": {
+            "title": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Leggenda"])},
+            "text": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["✓ = Tutti i cookie di questa categoria accettati\n▣ = Alcuni cookie accettati in questa categoria\n- = Nessun cookie accettato in questa categoria"])}
+          },
           "button": {
             "acceptAll": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Accetta tutti"])},
             "acceptSelection": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Salva la selezione"])}
@@ -9506,6 +9837,10 @@ function block0 (Component) {
           },
           "minimize": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Minimiséieren"])},
           "clearSite": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Läschen Daten"])},
+          "info": {
+            "title": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Legend"])},
+            "text": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["✓ = All Cookien an dëser Kategorie akzeptéiert\n▣ = E puer Cookien an dëser Kategorie akzeptéiert\n- = Keng Cookien an dëser Kategorie ugeholl"])}
+          },
           "button": {
             "acceptAll": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["All akzeptéieren"])},
             "acceptSelection": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Späicheren Auswiel"])}
@@ -9561,6 +9896,10 @@ function block0 (Component) {
           },
           "minimize": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Sumažinkite"])},
           "clearSite": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Ištrinti duomenis"])},
+          "info": {
+            "title": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Legenda"])},
+            "text": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["✓ = Priimami visi šios kategorijos slapukai\n▣ = Kai kurie šioje kategorijoje priimtini slapukai\n- = Šioje kategorijoje slapukai nepriimami"])}
+          },
           "button": {
             "acceptAll": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Priimti visus"])},
             "acceptSelection": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Išsaugoti pasirinkimą"])}
@@ -9616,6 +9955,10 @@ function block0 (Component) {
           },
           "minimize": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Minimizēt"])},
           "clearSite": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Dzēst datus"])},
+          "info": {
+            "title": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Leģenda"])},
+            "text": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["✓ = Visi šīs kategorijas sīkfaili ir pieņemti\n▣ = Dažas šajā kategorijā pieņemtās sīkdatnes\n- = Šajā kategorijā sīkfaili netiek pieņemti"])}
+          },
           "button": {
             "acceptAll": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Pieņemt visus"])},
             "acceptSelection": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Saglabāt atlasi"])}
@@ -9671,6 +10014,10 @@ function block0 (Component) {
           },
           "minimize": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Minimaliseer"])},
           "clearSite": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Gegevens wissen"])},
+          "info": {
+            "title": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Legende"])},
+            "text": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["✓ = Alle cookies in deze categorie geaccepteerd\n▣ = Enkele cookies die in deze categorie worden geaccepteerd\n- = Geen cookies aanvaard in deze categorie"])}
+          },
           "button": {
             "acceptAll": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Accepteer alle"])},
             "acceptSelection": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Selectie opslaan"])}
@@ -9726,6 +10073,10 @@ function block0 (Component) {
           },
           "minimize": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Minimer"])},
           "clearSite": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Slett data"])},
+          "info": {
+            "title": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Legende"])},
+            "text": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["✓ = Alle informasjonskapsler i denne kategorien akseptert\n▣ = Noen informasjonskapsler i denne kategorien akseptert\n- = Ingen informasjonskapsler i denne kategorien akseptert"])}
+          },
           "button": {
             "acceptAll": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Alle godtar"])},
             "acceptSelection": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Lagre utvalg"])}
@@ -9781,6 +10132,10 @@ function block0 (Component) {
           },
           "minimize": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Zminimalizuj"])},
           "clearSite": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Usuń dane"])},
+          "info": {
+            "title": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Legenda"])},
+            "text": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["✓ = Wszystkie ciasteczka w tej kategorii zaakceptowane\n▣ = Niektóre pliki cookie akceptowane w tej kategorii\n- = W tej kategorii nie akceptuje się plików cookie"])}
+          },
           "button": {
             "acceptAll": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Przyjmij wszystkie"])},
             "acceptSelection": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Zapisz wybór"])}
@@ -9836,6 +10191,10 @@ function block0 (Component) {
           },
           "minimize": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Minimizar"])},
           "clearSite": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Apagar dados"])},
+          "info": {
+            "title": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Lenda"])},
+            "text": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["✓ = Todos os cookies nesta categoria são aceites\n▣ = Alguns cookies aceites nesta categoria\n- = Não são aceites cookies nesta categoria"])}
+          },
           "button": {
             "acceptAll": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Aceitar todos"])},
             "acceptSelection": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Salvar selecção"])}
@@ -9891,6 +10250,10 @@ function block0 (Component) {
           },
           "minimize": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Minimizați"])},
           "clearSite": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Ștergeți datele"])},
+          "info": {
+            "title": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Legenda"])},
+            "text": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["✓ = Toate cookie-urile din această categorie sunt acceptate\n▣ = Unele cookie-uri acceptate în această categorie\n- = Nu se acceptă cookie-uri în această categorie"])}
+          },
           "button": {
             "acceptAll": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Acceptă toate"])},
             "acceptSelection": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Salvați selecția"])}
@@ -9946,6 +10309,10 @@ function block0 (Component) {
           },
           "minimize": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Минимизировать"])},
           "clearSite": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Удалить данные"])},
+          "info": {
+            "title": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Легенда"])},
+            "text": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["✓ = Все печенья в этой категории приняты\n▣ = Некоторые файлы cookie, принятые в этой категории\n- = В этой категории файлы cookie не принимаются"])}
+          },
           "button": {
             "acceptAll": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Принять все"])},
             "acceptSelection": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Сохранить выбор"])}
@@ -10001,6 +10368,10 @@ function block0 (Component) {
           },
           "minimize": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Minimalizujte"])},
           "clearSite": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Odstránenie údajov"])},
+          "info": {
+            "title": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Legenda"])},
+            "text": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["✓ = Všetky súbory cookie v tejto kategórii sú akceptované\n▣ = Niektoré súbory cookie akceptované v tejto kategórii\n- = V tejto kategórii nie sú akceptované žiadne súbory cookie"])}
+          },
           "button": {
             "acceptAll": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Prijať všetky"])},
             "acceptSelection": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Uložiť výber"])}
@@ -10056,6 +10427,10 @@ function block0 (Component) {
           },
           "minimize": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Minimieren"])},
           "clearSite": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Brisanje podatkov"])},
+          "info": {
+            "title": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Legenda"])},
+            "text": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["✓ = Sprejeti vsi piškotki v tej kategoriji\n▣ = Nekateri piškotki, sprejeti v tej kategoriji\n- = Piškotki v tej kategoriji niso sprejeti"])}
+          },
           "button": {
             "acceptAll": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Sprejmite vse"])},
             "acceptSelection": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Shranjevanje izbire"])}
@@ -10111,6 +10486,10 @@ function block0 (Component) {
           },
           "minimize": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Minimizoje"])},
           "clearSite": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Fshi të dhënat"])},
+          "info": {
+            "title": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Legjendë"])},
+            "text": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["✓ = Të gjitha cookies në këtë kategori pranuan\n▣ = Disa cookie në këtë kategori pranuan\n- = Asnjë cookie në këtë kategori nuk pranohet"])}
+          },
           "button": {
             "acceptAll": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Të gjithë pranojnë"])},
             "acceptSelection": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Ruaj përzgjedhjen"])}
@@ -10166,6 +10545,10 @@ function block0 (Component) {
           },
           "minimize": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Zmanjšanje"])},
           "clearSite": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Ta bort uppgifter"])},
+          "info": {
+            "title": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Legend"])},
+            "text": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["✓ = Alla kakor i denna kategori accepteras\n▣ = Några kakor som accepteras i denna kategori\n- = Inga kakor accepteras i denna kategori"])}
+          },
           "button": {
             "acceptAll": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Acceptera alla"])},
             "acceptSelection": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Spara val"])}
@@ -10221,6 +10604,10 @@ function block0 (Component) {
           },
           "minimize": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["küçültmek"])},
           "clearSite": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Verileri sil"])},
+          "info": {
+            "title": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Efsane"])},
+            "text": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["✓ = Bu kategorideki tüm çerezler kabul edildi\n▣ = Bu kategoride kabul edilen bazı çerezler\n- = Bu kategoride çerez kabul edilmez"])}
+          },
           "button": {
             "acceptAll": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Hepsi kabul ediyor"])},
             "acceptSelection": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Seçimi kaydet"])}
@@ -10276,6 +10663,10 @@ function block0 (Component) {
           },
           "minimize": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Звести до мінімуму"])},
           "clearSite": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Видалити дані"])},
+          "info": {
+            "title": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Легенда"])},
+            "text": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["✓ = Всі файли cookie цієї категорії прийняті\n▣ = Деякі файли cookie, прийняті в цій категорії\n- = У цій категорії файли cookie не приймаються"])}
+          },
           "button": {
             "acceptAll": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Всі приймають"])},
             "acceptSelection": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["Зберегти виділення"])}
@@ -10331,6 +10722,10 @@ function block0 (Component) {
           },
           "minimize": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["尽量减少"])},
           "clearSite": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["删除数据"])},
+          "info": {
+            "title": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["传说"])},
+            "text": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["✓ = 接受该类别中的所有\n▣ = 该类别中接受的一些\n- = 此类别中不接受cookies"])}
+          },
           "button": {
             "acceptAll": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["接受所有"])},
             "acceptSelection": (ctx) => {const { normalize: _normalize } = ctx;return _normalize(["保存选择"])}
@@ -10386,7 +10781,7 @@ var _export_sfc = (sfc, props) => {
   return target;
 };
 
-const _withScopeId = (n) => (pushScopeId("data-v-312bf78e"), n = n(), popScopeId(), n);
+const _withScopeId = (n) => (pushScopeId("data-v-adc0791c"), n = n(), popScopeId(), n);
 const _hoisted_1$2 = { id: "cookie-consent" };
 const _hoisted_2$1 = ["title"];
 const _hoisted_3$1 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ createBaseVNode("span", { class: "settings-icon" }, null, -1));
@@ -10488,7 +10883,7 @@ const _hoisted_68 = { key: 1 };
 const _hoisted_69 = { key: 5 };
 const _hoisted_70 = ["href"];
 const _sfc_main$2 = /* @__PURE__ */ defineComponent({
-  name: "CookieConsent",
+  __name: "CookieConsent",
   props: {
     categories: null,
     requiredLinks: null,
@@ -10510,33 +10905,21 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
     const blurOverlayReverse = ref(false);
     const detailsCards = ref([]);
     const isInfoOpen = ref(false);
-    ref("cookies");
-    const {
-      useMetaCookie,
-      animationDuration,
-      minimizeAnimationDuration,
-      hideDuration,
-      categories,
-      requiredLinks,
-      links,
-      storagePrefix,
-      storageConsentsKey
-    } = toRefs(props);
     const metaCookie = ref({
       id: t("metaCookieTitles.id"),
       name: t("metaCookieTitles.name"),
       provider: t("metaCookieTitles.provider"),
       purpose: t("metaCookieTitles.purpose"),
-      cookieName: storageConsentsKey.value,
+      cookieName: props.storageConsentsKey,
       cookieValidityPeriod: t("metaCookieTitles.cookieValidityPeriod")
     });
-    if (!(storageConsentsKey.value in localStorage))
+    if (!(props.storageConsentsKey in localStorage))
       showConsent.value = true;
     onBeforeMount(() => {
-      Consents$1(metaCookie.value, useMetaCookie.value, storagePrefix.value, storageConsentsKey.value, categories.value, consents);
-      document.documentElement.style.setProperty("--cookie-consent-animation-duration", animationDuration.value);
-      document.documentElement.style.setProperty("--cookie-consent-minimize-animation-duration", minimizeAnimationDuration.value);
-      document.documentElement.style.setProperty("--cookie-consent-hide-duration", hideDuration.value);
+      Consents$1(metaCookie.value, props.useMetaCookie, props.storagePrefix, props.storageConsentsKey, props.categories, consents);
+      document.documentElement.style.setProperty("--cookie-consent-animation-duration", props.animationDuration);
+      document.documentElement.style.setProperty("--cookie-consent-minimize-animation-duration", props.minimizeAnimationDuration);
+      document.documentElement.style.setProperty("--cookie-consent-hide-duration", props.hideDuration);
     });
     onMounted(() => {
     });
@@ -10560,14 +10943,14 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
       isInfoOpen.value = !isInfoOpen.value;
     }
     function setTransformToXY(container) {
-      let offsetLeft, containerWidth;
+      let containerWidth;
       let offsetTop = window.innerHeight / 4;
       if (isMainContainerVisible.value) {
         containerWidth = +getComputedStyle(document.documentElement).getPropertyValue("--cookie-consent-width").replace("px", "");
       } else {
         containerWidth = +getComputedStyle(document.documentElement).getPropertyValue("--cookie-consent-details-width").replace("px", "");
       }
-      offsetLeft = window.innerWidth / 2 - containerWidth / 2;
+      const offsetLeft = window.innerWidth / 2 - containerWidth / 2;
       offsetTop = container.offsetTop || offsetTop;
       const x = window.innerWidth - offsetLeft - 45 - containerWidth / 2;
       const y = window.innerHeight - offsetTop - 60;
@@ -10611,11 +10994,11 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
       setTransformToXY(container);
       overlay.classList.add("blur-overlay");
       container.classList.add("minimize");
-      const animationDuration2 = getComputedStyle(document.documentElement).getPropertyValue("--cookie-consent-minimize-animation-duration");
+      const animationDuration = getComputedStyle(document.documentElement).getPropertyValue("--cookie-consent-minimize-animation-duration");
       setTimeout(() => {
         showConsent.value = false;
         isMinimized.value = true;
-      }, +animationDuration2.replace("s", "") * 1e3 - 50);
+      }, +animationDuration.replace("s", "") * 1e3 - 50);
     }
     function hideConsent() {
       setTransformToWidthAndHeight();
@@ -10625,12 +11008,12 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
       setTransformToXY(container);
       overlay.classList.add("blur-overlay");
       container.classList.add("hide-consent");
-      const animationDuration2 = getComputedStyle(document.documentElement).getPropertyValue("--cookie-consent-hide-duration");
+      const animationDuration = getComputedStyle(document.documentElement).getPropertyValue("--cookie-consent-hide-duration");
       setTimeout(() => {
         showConsent.value = false;
         overlay.classList.remove("blur-overlay");
         container.classList.remove("hide-consent");
-      }, +animationDuration2.replace("s", "") * 1e3 - 50);
+      }, +animationDuration.replace("s", "") * 1e3 - 50);
     }
     function showMain(event) {
       event.preventDefault();
@@ -10641,10 +11024,10 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
       container.classList.remove("transform-to-details");
       container.classList.remove("maximize");
       container.classList.add("transform-to-main");
-      const animationDuration2 = getComputedStyle(document.documentElement).getPropertyValue("--cookie-consent-animation-duration");
+      const animationDuration = getComputedStyle(document.documentElement).getPropertyValue("--cookie-consent-animation-duration");
       setTimeout(() => {
         isMainContainerVisible.value = true;
-      }, +animationDuration2.replace("s", "") / 2 * 1e3);
+      }, +animationDuration.replace("s", "") / 2 * 1e3);
     }
     function showDetails(event) {
       event.preventDefault();
@@ -10655,10 +11038,10 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
       container.classList.remove("transform-to-main");
       container.classList.remove("maximize");
       container.classList.add("transform-to-details");
-      const animationDuration2 = getComputedStyle(document.documentElement).getPropertyValue("--cookie-consent-animation-duration");
+      const animationDuration = getComputedStyle(document.documentElement).getPropertyValue("--cookie-consent-animation-duration");
       setTimeout(() => {
         isMainContainerVisible.value = false;
-      }, +animationDuration2.replace("s", "") / 2 * 1e3);
+      }, +animationDuration.replace("s", "") / 2 * 1e3);
     }
     function acceptSelection() {
       hideConsent();
@@ -10666,8 +11049,8 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
       for (let i = 1; i < consents.length; i++) {
         for (let j = 0; j < consents[i].cookies.length; j++) {
           const cookieConsent = consents[i].cookies[j];
-          const cookie = categories.value[i].cookies[j];
-          const key = `${storagePrefix.value}-${categories.value[i].id}-${cookie.id}`;
+          const cookie = props.categories[i].cookies[j];
+          const key = `${props.storagePrefix}-${props.categories[i].id}-${cookie.id}`;
           if (cookieConsent.accepted) {
             obj[key] = true;
             if ("onAccepted" in cookie && typeof cookie.onAccepted === "function") {
@@ -10681,8 +11064,8 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
           }
         }
       }
-      localStorage.setItem(storageConsentsKey.value, JSON.stringify(obj));
-      if (useMetaCookie.value)
+      localStorage.setItem(props.storageConsentsKey, JSON.stringify(obj));
+      if (props.useMetaCookie)
         setMetaCookie(obj);
     }
     function setMetaCookie(obj) {
@@ -10700,18 +11083,18 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
         }
       }
       const obj = {};
-      for (let i = 1; i < categories.value.length; i++) {
-        for (let j = 0; j < categories.value[i].cookies.length; j++) {
-          const cookie = categories.value[i].cookies[j];
-          const key = `${storagePrefix.value}-${categories.value[i].id}-${cookie.id}`;
+      for (let i = 1; i < props.categories.length; i++) {
+        for (let j = 0; j < props.categories[i].cookies.length; j++) {
+          const cookie = props.categories[i].cookies[j];
+          const key = `${props.storagePrefix}-${props.categories[i].id}-${cookie.id}`;
           obj[key] = true;
           if ("onAccepted" in cookie && typeof cookie.onAccepted === "function") {
             cookie.onAccepted();
           }
         }
       }
-      localStorage.setItem(storageConsentsKey.value, JSON.stringify(obj));
-      if (useMetaCookie.value)
+      localStorage.setItem(props.storageConsentsKey, JSON.stringify(obj));
+      if (props.useMetaCookie)
         setMetaCookie(obj);
     }
     function toggleCookieInformation(event) {
@@ -10739,7 +11122,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
     }
     function toggleConsent(event, categoryIndex, cookieIndex) {
       const added = event.target.classList.toggle("active");
-      if (cookieIndex === void 0) {
+      if (!cookieIndex && cookieIndex !== 0) {
         if (added) {
           consents[categoryIndex].partial = false;
           consents[categoryIndex].accepted = true;
@@ -10755,7 +11138,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
         }
         return;
       }
-      const cookieDetailsCard = detailsCards.value[categoryIndex];
+      const cookieDetailsCard = unref(detailsCards)[categoryIndex];
       if (!added) {
         const binarySliders = cookieDetailsCard.querySelectorAll(".table-container .binary-slider");
         const res = [];
@@ -10784,8 +11167,8 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
       return openBlock(), createElementBlock("div", _hoisted_1$2, [
         createBaseVNode("div", {
           class: "settings-icon-container",
-          onClick: _cache[0] || (_cache[0] = ($event) => maximize($event)),
-          title: unref(t)("generalLabels.title")
+          title: unref(t)("generalLabels.title"),
+          onClick: _cache[0] || (_cache[0] = ($event) => maximize($event))
         }, _hoisted_4, 8, _hoisted_2$1),
         showConsent.value ? (openBlock(), createElementBlock("div", {
           key: 0,
@@ -10804,8 +11187,8 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
                     createBaseVNode("span", {
                       class: "cookie-consent-info font-bold",
                       title: unref(t)("generalLabels.info.title"),
-                      onClick: toggleInfo,
-                      style: { "font-family": "'Verdana'" }
+                      style: { "font-family": "'Verdana'" },
+                      onClick: toggleInfo
                     }, "i", 8, _hoisted_9),
                     createBaseVNode("div", {
                       class: normalizeClass(["rounded w-full h-max bg-blue-200 absolute top-[26px] left-0", { "cookie-consent-info-hide": !isInfoOpen.value }])
@@ -10818,15 +11201,15 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
                     rel: "nofollow",
                     href: "#",
                     class: "minimizer",
-                    onClick: _cache[1] || (_cache[1] = ($event) => minimize($event)),
-                    title: unref(t)("generalLabels.minimize")
+                    title: unref(t)("generalLabels.minimize"),
+                    onClick: _cache[1] || (_cache[1] = ($event) => minimize($event))
                   }, null, 8, _hoisted_12),
                   createBaseVNode("a", {
                     rel: "nofollow",
                     href: "#",
                     class: "clear-site",
-                    onClick: _cache[2] || (_cache[2] = ($event) => clearSite($event)),
-                    title: unref(t)("generalLabels.clearSite")
+                    title: unref(t)("generalLabels.clearSite"),
+                    onClick: _cache[2] || (_cache[2] = ($event) => clearSite($event))
                   }, null, 8, _hoisted_13),
                   createBaseVNode("div", _hoisted_14, [
                     _hoisted_15,
@@ -10837,10 +11220,10 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
                   _hoisted_18
                 ]),
                 createBaseVNode("div", _hoisted_19, [
-                  (openBlock(true), createElementBlock(Fragment, null, renderList(unref(categories), (category, index) => {
+                  (openBlock(true), createElementBlock(Fragment, null, renderList(props.categories, (category, index) => {
                     return openBlock(), createElementBlock("div", {
-                      class: "relative ml-4 inline-flex",
-                      key: category.id
+                      key: category.id,
+                      class: "relative ml-4 inline-flex"
                     }, [
                       createBaseVNode("div", _hoisted_20, [
                         createBaseVNode("input", {
@@ -10848,8 +11231,8 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
                           type: "checkbox",
                           checked: consents[index].accepted,
                           disabled: index === 0,
-                          onChange: ($event) => setCategoryConsent($event, index),
-                          class: "m-0"
+                          class: "m-0",
+                          onChange: ($event) => setCategoryConsent($event, index)
                         }, null, 40, _hoisted_21),
                         index > 0 && consents[index].partial ? (openBlock(), createElementBlock("span", _hoisted_22)) : createCommentVNode("", true),
                         index > 0 && !consents[index].partial && !consents[index].accepted ? (openBlock(), createElementBlock("span", _hoisted_23)) : createCommentVNode("", true)
@@ -10876,8 +11259,8 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
                     createBaseVNode("a", {
                       rel: "nofollow",
                       href: "#",
-                      onClick: _cache[5] || (_cache[5] = ($event) => showDetails($event)),
-                      class: "font-bold shadow-green-700 hover:shadow-[0_0_10px_green] text-[var(--cookie-consent-settings-color)] w-full h-full p-0.5 block"
+                      class: "font-bold shadow-green-700 hover:shadow-[0_0_10px_green] text-[var(--cookie-consent-settings-color)] w-full h-full p-0.5 block",
+                      onClick: _cache[5] || (_cache[5] = ($event) => showDetails($event))
                     }, toDisplayString$1(unref(t)("generalLabels.individualSettings")), 1)
                   ]),
                   createBaseVNode("a", {
@@ -10900,10 +11283,10 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
                   }, [
                     createBaseVNode("b", null, toDisplayString$1(unref(t)("generalLabels.requiredLinks.impress.title")), 1)
                   ], 8, _hoisted_28),
-                  (openBlock(true), createElementBlock(Fragment, null, renderList(unref(links), (link) => {
+                  (openBlock(true), createElementBlock(Fragment, null, renderList(__props.links, (link) => {
                     return openBlock(), createElementBlock("a", {
-                      rel: "nofollow",
                       key: link.title,
+                      rel: "nofollow",
                       href: link.href
                     }, [
                       createBaseVNode("b", null, toDisplayString$1(link.title), 1)
@@ -10922,8 +11305,8 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
                     rel: "nofollow",
                     href: "#",
                     class: "minimizer",
-                    onClick: _cache[8] || (_cache[8] = ($event) => minimize($event)),
-                    title: unref(t)("generalLabels.minimize")
+                    title: unref(t)("generalLabels.minimize"),
+                    onClick: _cache[8] || (_cache[8] = ($event) => minimize($event))
                   }, _hoisted_33, 8, _hoisted_31),
                   createBaseVNode("div", _hoisted_34, [
                     _hoisted_35,
@@ -10941,14 +11324,14 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
                     }, toDisplayString$1(unref(t)("generalLabels.button.acceptSelection")), 1)
                   ])
                 ]),
-                (openBlock(true), createElementBlock(Fragment, null, renderList(unref(categories), (category, categoryIndex) => {
+                (openBlock(true), createElementBlock(Fragment, null, renderList(props.categories, (category, categoryIndex) => {
                   return openBlock(), createElementBlock("div", {
-                    class: "cookie-details-card w-full rounded relative px-3 my-4 mx-2",
                     key: category.id,
                     ref_for: true,
                     ref: (el) => {
                       detailsCards.value[categoryIndex] = el;
-                    }
+                    },
+                    class: "cookie-details-card w-full rounded relative px-3 my-4 mx-2"
                   }, [
                     categoryIndex > 0 ? (openBlock(), createElementBlock("div", _hoisted_40, [
                       createBaseVNode("span", {
@@ -10969,7 +11352,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
                       ])
                     ])) : createCommentVNode("", true),
                     createBaseVNode("div", _hoisted_44, [
-                      createBaseVNode("h5", _hoisted_45, toDisplayString$1(category.label) + " (" + toDisplayString$1(getCookieCountForCategory(category)) + ")", 1)
+                      createBaseVNode("h5", _hoisted_45, toDisplayString$1(category.label) + " (" + toDisplayString$1(getCookieCountForCategory(category)) + ") ", 1)
                     ]),
                     createBaseVNode("p", null, toDisplayString$1(category.description), 1),
                     createBaseVNode("a", {
@@ -10988,7 +11371,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
                             createBaseVNode("td", null, [
                               createBaseVNode("div", _hoisted_48, [
                                 createBaseVNode("div", {
-                                  class: normalizeClass(["binary-slider", { active: consents[categoryIndex].cookies[cookieIndex].accepted }]),
+                                  class: normalizeClass(["binary-slider", { "active": consents[categoryIndex].cookies[cookieIndex].accepted }]),
                                   onClick: ($event) => toggleConsent($event, categoryIndex, cookieIndex)
                                 }, _hoisted_51, 10, _hoisted_49),
                                 createBaseVNode("div", {
@@ -11040,8 +11423,8 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
                             createBaseVNode("td", null, [
                               (openBlock(true), createElementBlock(Fragment, null, renderList(cookie.links, (link) => {
                                 return openBlock(), createElementBlock("a", {
-                                  rel: "nofollow",
                                   key: link.title,
+                                  rel: "nofollow",
                                   href: link.href,
                                   target: "_blank"
                                 }, toDisplayString$1(link.title || link.href), 9, _hoisted_70);
@@ -11063,7 +11446,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
 });
 if (typeof block0 === "function")
   block0(_sfc_main$2);
-var CookieConsent = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-312bf78e"]]);
+var CookieConsent = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-adc0791c"]]);
 
 var LanguageFlags_vue_vue_type_style_index_0_lang = '';
 
@@ -11074,7 +11457,7 @@ const _hoisted_2 = ["onClick", "title"];
 const _hoisted_3 = ["innerHTML"];
 
 const _sfc_main$1 = {
-  name: 'LanguageFlags',
+  __name: 'LanguageFlags',
   setup(__props) {
 
 const { locale } = useI18n();
@@ -11282,7 +11665,7 @@ var App_vue_vue_type_style_index_0_lang = '';
 
 const _hoisted_1 = { style: { "position": "relative", "z-index": "1" } };
 const _sfc_main = /* @__PURE__ */ defineComponent({
-  name: "App",
+  __name: "App",
   setup(__props) {
     let lang = ref("en");
     const obj = {
